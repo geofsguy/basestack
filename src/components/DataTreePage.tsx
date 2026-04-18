@@ -1107,7 +1107,7 @@ export default function DataTreePage() {
               className="flex items-center gap-2 px-6 py-3 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition-all shadow-xl shadow-black/10"
             >
               <Sparkles className="w-4 h-4" />
-              Generate Site with This Data
+              Choose Site Format
             </button>
             <a
               href="/dashboard"
