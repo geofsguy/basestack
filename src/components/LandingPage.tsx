@@ -547,7 +547,7 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
                 icon={<Share2 className="w-5 h-5" />}
                 accent="bg-emerald-500"
                 title="One-click publish"
-                description="Deploy to a live URL instantly. Share your link with the world right from the dashboard."
+                description="Effortlessly deploy your site on our servers in the click of one button 'Publish' and just like that it's out to the world with a custom link directly to your site. We host all users websites on our reliable cloud servers, but you can always export your site at any time."
                 className="h-full"
               >
                 <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
