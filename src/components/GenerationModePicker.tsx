@@ -1,4 +1,4 @@
-import { Code2, Layers3, Lock, Rocket, ServerCog, Sparkles } from 'lucide-react';
+import { Code2, Layers3, Lock, Rocket, ServerCog, Sparkles, CheckCircle2, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SiteGenerationMode } from '../types';
 
@@ -21,34 +21,32 @@ const OPTIONS: Array<{
 }> = [
   {
     mode: 'html',
-    title: 'HTML/CSS',
-    eyebrow: 'Fastest path',
-    summary: 'Great for a polished personal site that is simple to host and easy to ship.',
+    title: 'HTML & CSS',
+    eyebrow: 'Fastest Path',
+    summary: 'A pristine, statically built site. Ideal for landing pages, simple portfolios, and purely focusing on content.',
     strengths: [
-      'Works on every plan',
-      'Simpler static-style hosting',
-      'Faster to launch and maintain',
+      'Included in all plans automatically',
+      'Ultra-fast, zero-config static hosting',
+      'Extremely simple to launch & maintain',
     ],
     tradeoffs: [
-      'Less flexible for larger app-like experiences',
-      'No exported React/Next.js project files',
-      'Best when you want a clean finished site, not a dev stack',
+      'Not suited for dynamic, app-like logic',
+      'Doesn\'t export reusable React components',
     ],
   },
   {
     mode: 'nextjs',
-    title: 'Next.js',
-    eyebrow: 'More powerful build',
-    summary: 'Best when you want a richer React/Tailwind project you can keep developing after generation.',
+    title: 'Next.js App',
+    eyebrow: 'Powerful Build',
+    summary: 'A full-scale React and Tailwind project engineered for feature-rich, scalable development and interactivity.',
     strengths: [
-      'Deployable Next.js + React + Tailwind project',
-      'Better for iterative product-style builds',
-      'Great if you want exported source files',
+      'Complete Next.js + Tailwind infrastructure',
+      'Perfect foundation for complex web apps',
+      'Export pure source files for developers',
     ],
     tradeoffs: [
-      'Needs a server or modern app hosting setup',
-      'More moving parts than plain HTML/CSS',
-      'Locked to paid plans',
+      'Requires modern Node.js app hosting',
+      'Exclusive to Premium tiers',
     ],
   },
 ];
@@ -62,158 +60,166 @@ export default function GenerationModePicker({
   const isPaid = currentTier === 'pro' || currentTier === 'studio';
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc] px-6 py-10 font-sans relative overflow-hidden">
-      <div
-        className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none"
-        style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '24px 24px' }}
-      />
+    <div className="min-h-[100dvh] bg-[#fafafa] flex flex-col font-sans relative overflow-x-hidden selection:bg-black selection:text-white pb-10">
+      {/* Refined Minimalist Grid Background */}
+      <div className="absolute inset-0 pointer-events-none z-0 bg-[linear-gradient(to_right,#e5e5e5_1px,transparent_1px),linear-gradient(to_bottom,#e5e5e5_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,#000_70%,transparent_100%)] opacity-[0.4]" />
+      <div className="absolute top-0 inset-x-0 h-[500px] pointer-events-none z-0 bg-gradient-to-b from-white/80 via-white/40 to-transparent" />
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl items-center">
-        <div className="grid w-full gap-8 lg:grid-cols-[1.05fr_1.2fr]">
-          <div className="rounded-[2rem] border border-gray-100 bg-white/90 p-8 shadow-[0_16px_60px_rgba(0,0,0,0.05)] backdrop-blur">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">
-              <Sparkles className="h-3.5 w-3.5" />
-              Build Format
-            </div>
+      <div className="relative z-10 w-full max-w-5xl mx-auto px-6 pt-24 flex-1 flex flex-col">
+        {/* Header Section */}
+        <div className="text-center mb-16 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white ring-1 ring-inset ring-neutral-200/80 shadow-sm mb-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+            <Sparkles className="w-3.5 h-3.5 text-neutral-500" />
+            <span className="text-[11px] font-bold tracking-[0.2em] text-neutral-600 uppercase">
+              Build Architecture
+            </span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-neutral-950 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100 fill-mode-both">
+            Choose your foundation
+          </h1>
+          <p className="text-lg text-neutral-500 leading-relaxed font-light animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 fill-mode-both [text-wrap:balance]">
+            Both engines compile to a stunning final product. The difference lies in how you plan to host, scale, and iterate on your code after it's generated.
+          </p>
+        </div>
 
-            <h1 className="max-w-md text-4xl font-medium tracking-tight text-gray-950">
-              Choose how you want BaseStack to generate your site.
-            </h1>
-            <p className="mt-4 max-w-xl text-[15px] leading-7 text-gray-500">
-              Both options can look great. The real difference is how much flexibility and hosting setup you want after generation.
-            </p>
+        {/* Selection Cards */}
+        <div className="grid md:grid-cols-2 gap-6 lg:gap-8 mb-16 relative animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
+          {OPTIONS.map((option) => {
+            const isLocked = option.mode === 'nextjs' && !isPaid;
+            const isSelected = selectedMode === option.mode;
 
-            <div className="mt-8 space-y-4 rounded-[1.75rem] border border-gray-100 bg-gray-50/80 p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-black text-white shadow-lg shadow-black/10">
-                  <ServerCog className="h-5 w-5" />
+            return (
+              <button
+                key={option.mode}
+                type="button"
+                onClick={() => !isLocked && onSelect(option.mode)}
+                className={`group relative text-left rounded-[2rem] p-8 md:p-10 transition-all duration-500 ease-out flex flex-col focus:outline-none ${
+                  isSelected
+                    ? 'bg-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.12)] ring-2 ring-inset ring-black scale-[1.02]'
+                    : isLocked
+                      ? 'bg-neutral-50/50 ring-1 ring-inset ring-neutral-200 opacity-[0.85] cursor-not-allowed'
+                      : 'bg-white ring-1 ring-inset ring-neutral-200/80 shadow-sm hover:shadow-[0_20px_40px_-20px_rgba(0,0,0,0.08)] hover:-translate-y-1 hover:ring-neutral-300'
+                }`}
+              >
+                {/* Card Header */}
+                <div className="flex justify-between items-start mb-8 w-full">
+                  <div
+                    className={`p-4 rounded-2xl flex items-center justify-center transition-colors duration-300 ${
+                      isSelected
+                        ? 'bg-black text-white shadow-md shadow-black/20'
+                        : isLocked
+                          ? 'bg-neutral-200/60 text-neutral-400'
+                          : 'bg-neutral-100 text-neutral-700 group-hover:bg-neutral-200 group-hover:text-black'
+                    }`}
+                  >
+                    {option.mode === 'nextjs' ? <Layers3 className="w-6 h-6" /> : <Code2 className="w-6 h-6" />}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {isLocked && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-100 ring-1 ring-inset ring-neutral-200 text-[11px] font-bold tracking-wide text-neutral-500 uppercase">
+                        <Lock className="w-3 h-3" />
+                        Premium Only
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span className="inline-flex px-3 py-1 bg-black rounded-full text-[11px] font-bold tracking-wide text-white shadow-sm uppercase animate-in fade-in zoom-in duration-300">
+                        Selected
+                      </span>
+                    )}
+                  </div>
                 </div>
+
+                {/* Card Intro Text */}
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">Your current plan</p>
-                  <p className="text-sm text-gray-500">
-                    {currentTier === 'free' ? 'Free' : currentTier === 'studio' ? 'Studio' : 'Pro'}
+                  <div className="text-[11px] font-bold tracking-[0.2em] text-neutral-400 uppercase mb-2.5">
+                    {option.eyebrow}
+                  </div>
+                  <h2 className="text-2xl font-semibold tracking-tight text-neutral-900 mb-3">
+                    {option.title}
+                  </h2>
+                  <p className="text-[15px] text-neutral-500 leading-relaxed font-light min-h-[44px]">
+                    {option.summary}
                   </p>
                 </div>
-              </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm leading-6 text-gray-500">
-                {isPaid ? (
-                  <>You can choose either format. Pick HTML/CSS for a simpler site, or Next.js if you want the richer exported project.</>
-                ) : (
-                  <>
-                    You can generate with HTML/CSS right now. Next.js is shown here for transparency, but it stays locked until you upgrade.
-                    {' '}
-                    <Link to="/settings" className="font-medium text-gray-900 underline underline-offset-4">
-                      View plans
-                    </Link>
-                    .
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-5">
-            {OPTIONS.map((option) => {
-              const isLocked = option.mode === 'nextjs' && !isPaid;
-              const isSelected = selectedMode === option.mode;
-
-              return (
-                <button
-                  key={option.mode}
-                  type="button"
-                  onClick={() => {
-                    if (!isLocked) onSelect(option.mode);
-                  }}
-                  className={`group relative w-full overflow-hidden rounded-[2rem] border bg-white p-6 text-left shadow-sm transition-all ${
-                    isSelected
-                      ? 'border-black shadow-[0_18px_55px_rgba(0,0,0,0.08)]'
-                      : isLocked
-                        ? 'border-gray-200 opacity-90'
-                        : 'border-gray-100 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-lg'
-                  }`}
-                >
-                  <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-gray-900 via-gray-600 to-gray-300 opacity-90" />
-
-                  <div className="flex flex-wrap items-start justify-between gap-4 pt-3">
-                    <div className="flex items-start gap-4">
-                      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
-                        option.mode === 'nextjs' ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-100 text-gray-900'
-                      }`}>
-                        {option.mode === 'nextjs' ? <Layers3 className="h-5 w-5" /> : <Code2 className="h-5 w-5" />}
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gray-400">
-                          {option.eyebrow}
-                        </p>
-                        <h2 className="mt-1 text-2xl font-medium tracking-tight text-gray-950">{option.title}</h2>
-                        <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500">{option.summary}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {isLocked && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
-                          <Lock className="h-3.5 w-3.5" />
-                          Paid plans
-                        </span>
-                      )}
-                      {isSelected && !isLocked && (
-                        <span className="rounded-full border border-black bg-black px-3 py-1 text-xs font-semibold text-white">
-                          Selected
-                        </span>
-                      )}
-                    </div>
+                {/* Card Feature Lists */}
+                <div className="mt-8 pt-8 space-y-8 border-t border-neutral-100/80">
+                  <div>
+                    <h3 className="text-[11px] font-bold tracking-[0.2em] text-neutral-900 uppercase mb-4 flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-black" />
+                      Benefits
+                    </h3>
+                    <ul className="space-y-3.5">
+                      {option.strengths.map((s) => (
+                        <li key={s} className="flex items-start gap-3">
+                          <div className="w-1.5 h-1.5 rounded-full bg-neutral-300 mt-2 shrink-0" />
+                          <span className="text-[14px] text-neutral-600 leading-relaxed font-light">{s}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    <div className="rounded-[1.5rem] bg-gray-50 px-4 py-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Upsides</p>
-                      <div className="mt-3 space-y-2">
-                        {option.strengths.map((item) => (
-                          <p key={item} className="text-sm leading-6 text-gray-700">
-                            {item}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="rounded-[1.5rem] bg-gray-50 px-4 py-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">Tradeoffs</p>
-                      <div className="mt-3 space-y-2">
-                        {option.tradeoffs.map((item) => (
-                          <p key={item} className="text-sm leading-6 text-gray-700">
-                            {item}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
+                  <div>
+                    <h3 className="text-[11px] font-bold tracking-[0.2em] text-neutral-400 uppercase mb-4 flex items-center gap-2">
+                      <X className="w-3.5 h-3.5 text-neutral-400" />
+                      Tradeoffs
+                    </h3>
+                    <ul className="space-y-3.5">
+                      {option.tradeoffs.map((t) => (
+                        <li key={t} className="flex items-start gap-3 opacity-80">
+                          <div className="w-1.5 h-1.5 rounded-full bg-neutral-200 mt-2 shrink-0" />
+                          <span className="text-[14px] text-neutral-500 leading-relaxed font-light">{t}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </button>
-              );
-            })}
-
-            <div className="flex flex-col items-start justify-between gap-4 rounded-[2rem] border border-gray-100 bg-white px-6 py-5 shadow-sm sm:flex-row sm:items-center">
-              <div>
-                <p className="text-sm font-semibold text-gray-900">
-                  {selectedMode === 'nextjs' ? 'Next.js project selected' : 'HTML/CSS selected'}
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                  {selectedMode === 'nextjs'
-                    ? 'You will get a richer project structure plus the in-app preview.'
-                    : 'You will get a polished HTML site that is simpler to host and manage.'}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={onContinue}
-                className="inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-medium text-white transition-all hover:bg-gray-800"
-              >
-                Continue with {selectedMode === 'nextjs' ? 'Next.js' : 'HTML/CSS'}
-                <Rocket className="h-4 w-4" />
+                </div>
               </button>
+            );
+          })}
+        </div>
+
+        {/* Bottom Action Bar */}
+        <div className="mt-auto w-full max-w-4xl mx-auto mb-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500 fill-mode-both">
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-5 shadow-[0_8px_40px_-5px_rgba(0,0,0,0.06)] ring-1 ring-inset ring-neutral-200/80 flex flex-col sm:flex-row items-center gap-6 justify-between transition-all">
+            <div className="flex items-center gap-4 px-2 w-full sm:w-auto">
+              <div className="w-12 h-12 rounded-full bg-neutral-100/80 flex items-center justify-center shrink-0">
+                <ServerCog className="w-5 h-5 text-neutral-600" />
+              </div>
+              <div>
+                <div className="text-[15px] font-medium text-neutral-900 flex items-center gap-2">
+                  Plan details
+                  <span className="px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-600 border border-neutral-200 text-[10px] font-bold uppercase tracking-widest leading-none flex items-center h-[22px]">
+                    {currentTier}
+                  </span>
+                </div>
+                <div className="text-[13px] text-neutral-500 mt-0.5">
+                  {isPaid ? (
+                    'You have full access to all formats.'
+                  ) : (
+                    <span className="flex items-center gap-1 font-light">
+                      HTML is ready.
+                      <Link to="/settings" className="font-medium text-black underline underline-offset-2 hover:text-neutral-600 transition-colors">
+                        Upgrade for Next.js.
+                      </Link>
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={onContinue}
+              className="w-full sm:w-auto relative group overflow-hidden rounded-[1.25rem] bg-black px-8 py-4 text-[15px] font-medium text-white transition-all hover:scale-105 active:scale-95 shadow-xl shadow-black/10 flex items-center justify-center gap-2"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                Continue with {selectedMode === 'nextjs' ? 'Next.js' : 'HTML'}
+                <Rocket className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform ease-out duration-300" />
+              </span>
+              <div className="absolute inset-0 z-0 bg-gradient-to-r from-neutral-800 to-black opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </button>
           </div>
         </div>
       </div>
