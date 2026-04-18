@@ -20,6 +20,9 @@ import {
   BarChart3,
   Eye,
   Lock,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import PublishModal from './PublishModal';
@@ -38,6 +41,10 @@ interface Page {
   published_at: string | null;
   generation_mode?: 'html' | 'nextjs' | null;
   framework?: string | null;
+}
+
+function getPageDisplayName(page: Page): string {
+  return page.title?.trim() || 'Untitled Site';
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -106,6 +113,10 @@ export default function Dashboard() {
   const [analyticsTarget, setAnalyticsTarget] = useState<Page | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Page | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [tipIndex, setTipIndex] = useState(0);
   const [tipVisible, setTipVisible] = useState(true);
   const tipTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -233,11 +244,82 @@ export default function Dashboard() {
     await supabase.auth.signOut();
   };
 
+  const openDeleteModal = (page: Page) => {
+    setDeleteTarget(page);
+    setDeleteConfirmation('');
+    setDeleteError(null);
+  };
+
+  const closeDeleteModal = () => {
+    if (isDeleting) return;
+    setDeleteTarget(null);
+    setDeleteConfirmation('');
+    setDeleteError(null);
+  };
+
+  const handleDeleteSite = async () => {
+    if (!deleteTarget || isDeleting) return;
+
+    const expectedName = getPageDisplayName(deleteTarget);
+    if (deleteConfirmation.trim() !== expectedName) {
+      setDeleteError('Type the site name exactly to confirm deletion.');
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        throw new Error('You need to be signed in to delete a site.');
+      }
+
+      const { data, error } = await supabase
+        .from('pages')
+        .delete()
+        .eq('id', deleteTarget.id)
+        .eq('user_id', userData.user.id)
+        .select('id')
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        throw new Error('Delete was blocked before the site could be removed. Please check your Supabase delete policy for the signed-in user.');
+      }
+
+      setPages((prev) => prev.filter((page) => page.id !== deleteTarget.id));
+      setPublishTarget((prev) => (prev?.id === deleteTarget.id ? null : prev));
+      setAnalyticsTarget((prev) => (prev?.id === deleteTarget.id ? null : prev));
+      setAnalyticsOverview((prev) => {
+        const next = { ...prev };
+        delete next[deleteTarget.id];
+        return next;
+      });
+      setAnalyticsCache((prev) => {
+        const next = { ...prev };
+        delete next[deleteTarget.id];
+        return next;
+      });
+      setDeleteTarget(null);
+      setDeleteConfirmation('');
+      setDeleteError(null);
+      void fetchPlanData();
+    } catch (err: any) {
+      console.error('Error deleting page:', err);
+      setDeleteError(err.message || 'Unable to delete this site right now.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const liveSites = pages.filter(p => p.published_at).length;
   const draftSites = pages.length - liveSites;
   const hasPremiumAnalytics = isPremiumTier(currentTier);
   const analyticsOverviewItems = Object.values(analyticsOverview) as SiteAnalyticsOverviewItem[];
   const totalTrackedViews = analyticsOverviewItems.reduce((sum, item) => sum + item.total_views, 0);
+  const deleteTargetName = deleteTarget ? getPageDisplayName(deleteTarget) : '';
+  const deleteMatches = deleteConfirmation.trim() === deleteTargetName;
   const dashboardStats = [
     { label: 'Total Sites', value: pages.length, icon: LayoutTemplate, color: 'text-gray-900' },
     { label: 'Live', value: liveSites, icon: Globe, color: 'text-emerald-600' },
@@ -414,7 +496,7 @@ export default function Dashboard() {
                         )}
                       </div>
                       <h3 className="text-base font-medium tracking-tight text-gray-900 mb-1">
-                        {page.title || 'Untitled Site'}
+                        {getPageDisplayName(page)}
                       </h3>
                       <div className="mb-3 flex flex-wrap items-center gap-2">
                         <p className="text-sm text-gray-400">{page.vibe || 'Random Vibe'}</p>
@@ -516,6 +598,13 @@ export default function Dashboard() {
                           <Sparkles className="w-3.5 h-3.5 mr-1.5" />
                           Edit with AI
                         </Link>
+                        <button
+                          onClick={() => openDeleteModal(page)}
+                          className="flex items-center text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                          Delete
+                        </button>
                       </div>
                       <button
                         onClick={() => setPublishTarget(page)}
@@ -631,7 +720,7 @@ export default function Dashboard() {
                         <div className="w-1.5 h-1.5 rounded-full bg-gray-300 mt-1.5 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-gray-700 truncate">
-                            {page.title || 'Untitled Site'}
+                            {getPageDisplayName(page)}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span
@@ -736,6 +825,80 @@ export default function Dashboard() {
           onClose={() => setPublishTarget(null)}
           onPublished={({ slug, publishedAt }) => handlePublished(publishTarget.id, slug, publishedAt)}
         />
+      )}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+          onClick={closeDeleteModal}
+        >
+          <div
+            className="w-full max-w-md rounded-[2rem] border border-red-100 bg-white p-8 shadow-2xl shadow-black/10"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+
+            <h2 className="text-2xl font-medium tracking-tight text-gray-900">Delete site</h2>
+            <p className="mt-2 text-[15px] leading-relaxed text-gray-500">
+              This permanently deletes <span className="font-semibold text-gray-900">{deleteTargetName}</span>.
+              Type the site name exactly to confirm.
+            </p>
+
+            <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Type this name</p>
+              <p className="mt-1 text-sm font-medium text-gray-900">{deleteTargetName}</p>
+            </div>
+
+            <div className="mt-5">
+              <label htmlFor="delete-site-confirmation" className="mb-2 block text-sm font-medium text-gray-700">
+                Confirm site name
+              </label>
+              <input
+                id="delete-site-confirmation"
+                type="text"
+                value={deleteConfirmation}
+                onChange={(event) => {
+                  setDeleteConfirmation(event.target.value);
+                  if (deleteError) setDeleteError(null);
+                }}
+                autoFocus
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-[15px] font-medium text-gray-900 outline-none transition-all focus:border-red-300 focus:ring-1 focus:ring-red-500/20"
+                placeholder={deleteTargetName}
+              />
+            </div>
+
+            {deleteError && (
+              <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                onClick={closeDeleteModal}
+                disabled={isDeleting}
+                className="rounded-full border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteSite}
+                disabled={!deleteMatches || isDeleting}
+                className="inline-flex items-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete site'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       <SiteAnalyticsModal
         open={!!analyticsTarget}
