@@ -1,0 +1,2 @@
+[functions.sync-billing-status]
+verify_jwt = false
