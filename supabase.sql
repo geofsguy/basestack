@@ -316,6 +316,7 @@ BEGIN
 END;
 $func$;
 
+DROP FUNCTION IF EXISTS public.record_page_view(TEXT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.record_page_view(
     input_page_slug TEXT,
     input_visitor_token TEXT,
@@ -377,6 +378,7 @@ BEGIN
 END;
 $func$;
 
+DROP FUNCTION IF EXISTS public.get_site_analytics(UUID);
 CREATE OR REPLACE FUNCTION public.get_site_analytics(input_page_id UUID)
 RETURNS JSON
 LANGUAGE plpgsql
@@ -494,6 +496,7 @@ BEGIN
 END;
 $func$;
 
+DROP FUNCTION IF EXISTS public.get_site_analytics_overview();
 CREATE OR REPLACE FUNCTION public.get_site_analytics_overview()
 RETURNS JSON
 LANGUAGE plpgsql

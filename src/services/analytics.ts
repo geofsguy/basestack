@@ -38,6 +38,11 @@ function getReferrerHost() {
   }
 }
 
+function isMissingRpcError(error: { message?: string; details?: string; code?: string } | null | undefined) {
+  const combined = `${error?.message || ''} ${error?.details || ''}`.toLowerCase();
+  return error?.code === 'PGRST202' || combined.includes('could not find the function') || combined.includes('404');
+}
+
 export async function trackPublishedPageView(pageSlug: string) {
   const trimmedSlug = pageSlug.trim();
   if (!trimmedSlug) return false;
@@ -49,6 +54,9 @@ export async function trackPublishedPageView(pageSlug: string) {
   });
 
   if (error) {
+    if (isMissingRpcError(error)) {
+      return false;
+    }
     throw error;
   }
 
@@ -58,6 +66,9 @@ export async function trackPublishedPageView(pageSlug: string) {
 export async function fetchSiteAnalyticsOverview() {
   const { data, error } = await supabase.rpc('get_site_analytics_overview');
   if (error) {
+    if (isMissingRpcError(error)) {
+      return [];
+    }
     throw error;
   }
 
@@ -75,6 +86,9 @@ export async function fetchSiteAnalytics(pageId: string) {
   });
 
   if (error) {
+    if (isMissingRpcError(error)) {
+      throw new Error('Analytics is not available yet because the latest Supabase migration has not been applied.');
+    }
     throw error;
   }
 
