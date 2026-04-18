@@ -17,9 +17,16 @@ import {
   CheckCircle2,
   Circle,
   TrendingUp,
+  BarChart3,
+  Eye,
+  Lock,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import PublishModal from './PublishModal';
+import SiteAnalyticsModal from './SiteAnalyticsModal';
+import { fetchSiteAnalytics, fetchSiteAnalyticsOverview } from '../services/analytics';
+import { SubscriptionTier, normalizeTier, isPremiumTier } from '../lib/plan';
+import { SiteAnalytics, SiteAnalyticsOverviewItem } from '../types';
 
 interface Page {
   id: string;
@@ -93,6 +100,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [publishTarget, setPublishTarget] = useState<Page | null>(null);
   const [hasDataTree, setHasDataTree] = useState(false);
+  const [currentTier, setCurrentTier] = useState<SubscriptionTier>('free');
+  const [analyticsOverview, setAnalyticsOverview] = useState<Record<string, SiteAnalyticsOverviewItem>>({});
+  const [analyticsCache, setAnalyticsCache] = useState<Record<string, SiteAnalytics>>({});
+  const [analyticsTarget, setAnalyticsTarget] = useState<Page | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [tipIndex, setTipIndex] = useState(0);
   const [tipVisible, setTipVisible] = useState(true);
   const tipTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -101,6 +114,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchPages();
     checkDataTree();
+    fetchPlanData();
   }, []);
 
   // Rotate tips every 5 s with a fade-out / fade-in
@@ -152,13 +166,67 @@ export default function Dashboard() {
     }
   };
 
+  const fetchPlanData = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_usage');
+      if (error) throw error;
+
+      const tier = normalizeTier(data?.tier);
+      setCurrentTier(tier);
+
+      if (isPremiumTier(tier)) {
+        const overview = await fetchSiteAnalyticsOverview();
+        setAnalyticsOverview(
+          overview.reduce<Record<string, SiteAnalyticsOverviewItem>>((accumulator, item) => {
+            accumulator[item.page_id] = item;
+            return accumulator;
+          }, {}),
+        );
+      } else {
+        setAnalyticsOverview({});
+      }
+    } catch (err) {
+      console.error('Error fetching analytics plan data:', err);
+      setCurrentTier('free');
+      setAnalyticsOverview({});
+    }
+  };
+
   const handlePublished = (pageId: string, slug: string, publishedAt: string) => {
     setPages(prev =>
       prev.map(p =>
         p.id === pageId ? { ...p, slug, published_at: publishedAt } : p
       )
     );
+    void fetchPlanData();
     setPublishTarget(null);
+  };
+
+  const openAnalytics = async (page: Page) => {
+    setAnalyticsTarget(page);
+    setAnalyticsError(null);
+
+    if (!isPremiumTier(currentTier)) {
+      setAnalyticsLoading(false);
+      return;
+    }
+
+    const cached = analyticsCache[page.id];
+    if (cached) {
+      setAnalyticsLoading(false);
+      return;
+    }
+
+    setAnalyticsLoading(true);
+    try {
+      const analytics = await fetchSiteAnalytics(page.id);
+      setAnalyticsCache((prev) => ({ ...prev, [page.id]: analytics }));
+    } catch (err: any) {
+      console.error('Error fetching site analytics:', err);
+      setAnalyticsError(err.message || 'Unable to load site analytics right now.');
+    } finally {
+      setAnalyticsLoading(false);
+    }
   };
 
   const handleSignOut = async () => {
@@ -167,6 +235,17 @@ export default function Dashboard() {
 
   const liveSites = pages.filter(p => p.published_at).length;
   const draftSites = pages.length - liveSites;
+  const hasPremiumAnalytics = isPremiumTier(currentTier);
+  const analyticsOverviewItems = Object.values(analyticsOverview) as SiteAnalyticsOverviewItem[];
+  const totalTrackedViews = analyticsOverviewItems.reduce((sum, item) => sum + item.total_views, 0);
+  const dashboardStats = [
+    { label: 'Total Sites', value: pages.length, icon: LayoutTemplate, color: 'text-gray-900' },
+    { label: 'Live', value: liveSites, icon: Globe, color: 'text-emerald-600' },
+    { label: 'Drafts', value: draftSites, icon: FileText, color: 'text-amber-500' },
+    ...(hasPremiumAnalytics
+      ? [{ label: 'Views', value: totalTrackedViews, icon: Eye, color: 'text-indigo-600' }]
+      : []),
+  ];
 
   // Checklist steps
   const steps = [
@@ -239,12 +318,8 @@ export default function Dashboard() {
 
         {/* ── Stats Bar ── */}
         {!loading && (
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            {[
-              { label: 'Total Sites', value: pages.length, icon: LayoutTemplate, color: 'text-gray-900' },
-              { label: 'Live', value: liveSites, icon: Globe, color: 'text-emerald-600' },
-              { label: 'Drafts', value: draftSites, icon: FileText, color: 'text-amber-500' },
-            ].map(({ label, value, icon: Icon, color }, i) => (
+          <div className={`grid gap-4 mb-8 ${hasPremiumAnalytics ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3'}`}>
+            {dashboardStats.map(({ label, value, icon: Icon, color }, i) => (
               <div
                 key={label}
                 className="bg-white/80 backdrop-blur-md border border-gray-100 rounded-2xl px-6 py-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-8 fill-mode-both"
@@ -357,6 +432,46 @@ export default function Dashboard() {
                       <p className="text-xs text-gray-300 font-medium">
                         Created {new Date(page.created_at).toLocaleDateString()}
                       </p>
+                      {page.published_at && (
+                        <div className={`mt-4 rounded-2xl border px-4 py-3 ${
+                          hasPremiumAnalytics
+                            ? 'border-indigo-100 bg-indigo-50/70'
+                            : 'border-gray-100 bg-gray-50'
+                        }`}>
+                          {hasPremiumAnalytics ? (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-400">
+                                  Views
+                                </p>
+                                <p className="mt-1 text-lg font-semibold tracking-tight text-indigo-900">
+                                  {analyticsOverview[page.id]?.total_views ?? 0}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-400">
+                                  Visitors
+                                </p>
+                                <p className="mt-1 text-lg font-semibold tracking-tight text-indigo-900">
+                                  {analyticsOverview[page.id]?.unique_visitors ?? 0}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl bg-white text-gray-500 shadow-sm">
+                                <Lock className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-700">Premium analytics</p>
+                                <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                                  Upgrade to Pro or Studio to see traffic, visitors, and referrers.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="px-6 py-4 border-t border-gray-50 flex items-center justify-between gap-2">
                       <div className="flex items-center gap-3">
@@ -380,6 +495,19 @@ export default function Dashboard() {
                             Preview
                             <LinkIcon className="w-3 h-3 ml-1.5" />
                           </a>
+                        )}
+                        {page.published_at && (
+                          <button
+                            onClick={() => openAnalytics(page)}
+                            className={`flex items-center text-sm font-medium transition-colors ${
+                              hasPremiumAnalytics
+                                ? 'text-indigo-600 hover:text-indigo-700'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                          >
+                            <BarChart3 className="w-3.5 h-3.5 mr-1.5" />
+                            Analytics
+                          </button>
                         )}
                         <Link
                           to={`/edit/${page.id}`}
@@ -564,6 +692,36 @@ export default function Dashboard() {
                   {TIPS[tipIndex].text}
                 </p>
               </div>
+
+              <div className={`rounded-2xl border p-5 shadow-sm ${
+                hasPremiumAnalytics ? 'border-indigo-100 bg-indigo-50/70' : 'border-gray-100 bg-white'
+              }`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart3 className={`w-4 h-4 ${hasPremiumAnalytics ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  <h3 className="text-sm font-semibold text-gray-900">Analytics</h3>
+                </div>
+                {hasPremiumAnalytics ? (
+                  <>
+                    <p className="text-2xl font-bold tracking-tight text-indigo-900">{totalTrackedViews}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-indigo-700">
+                      Total recorded views across your live portfolio sites.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-gray-700">Upgrade for traffic insights</p>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                      Premium members can see views, visitors, and referral sources for every published site.
+                    </p>
+                    <button
+                      onClick={() => navigate('/settings')}
+                      className="mt-4 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-gray-800"
+                    >
+                      View plans
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -579,6 +737,20 @@ export default function Dashboard() {
           onPublished={({ slug, publishedAt }) => handlePublished(publishTarget.id, slug, publishedAt)}
         />
       )}
+      <SiteAnalyticsModal
+        open={!!analyticsTarget}
+        page={analyticsTarget ? { title: analyticsTarget.title, slug: analyticsTarget.slug } : null}
+        hasPremiumAccess={hasPremiumAnalytics}
+        analytics={analyticsTarget ? analyticsCache[analyticsTarget.id] || null : null}
+        loading={analyticsLoading}
+        error={analyticsError}
+        onClose={() => {
+          setAnalyticsTarget(null);
+          setAnalyticsError(null);
+          setAnalyticsLoading(false);
+        }}
+        onUpgrade={() => navigate('/settings')}
+      />
     </div>
   );
 }

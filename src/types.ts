@@ -28,6 +28,34 @@ export interface SiteContent {
   projectFiles?: SiteProjectFile[] | null;
 }
 
+export interface SiteAnalyticsPoint {
+  date: string;
+  views: number;
+}
+
+export interface SiteAnalyticsReferrer {
+  source: string;
+  views: number;
+}
+
+export interface SiteAnalyticsOverviewItem {
+  page_id: string;
+  total_views: number;
+  unique_visitors: number;
+  views_last_7_days: number;
+  last_viewed_at: string | null;
+}
+
+export interface SiteAnalytics {
+  page_id: string;
+  total_views: number;
+  unique_visitors: number;
+  views_last_7_days: number;
+  last_viewed_at: string | null;
+  trend: SiteAnalyticsPoint[];
+  top_referrers: SiteAnalyticsReferrer[];
+}
+
 // ─── Profile / Data Tree ───────────────────────────────────────────────────
 
 export interface ExperienceEntry {

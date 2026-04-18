@@ -5,6 +5,7 @@ import { Loader2, Globe, ArrowLeft } from 'lucide-react';
 import Watermark from './Watermark';
 import { buildSiteDocument } from '../services/siteDocument';
 import { sanitizeGeneratedHtml } from '../services/htmlSanitizer';
+import { trackPublishedPageView } from '../services/analytics';
 
 export default function ViewBySlug() {
   const { slug } = useParams<{ slug: string }>();
@@ -29,6 +30,9 @@ export default function ViewBySlug() {
       if (error) throw error;
       if (!data) { setNotFound(true); return; }
       setHtml(data.html);
+      void trackPublishedPageView(slug).catch((trackingError) => {
+        console.warn('Analytics tracking failed:', trackingError);
+      });
     } catch (err) {
       console.error('Error loading site:', err);
       setNotFound(true);

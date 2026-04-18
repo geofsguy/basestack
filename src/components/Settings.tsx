@@ -330,8 +330,8 @@ export default function Settings() {
 
               <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {(welcomePlan === 'studio'
-                  ? ['50 AI operations each month', 'Unlimited websites', 'Priority support', 'Next.js project export']
-                  : ['20 AI operations each month', 'Up to 5 websites', 'No BaseStack watermark', 'Next.js project export']
+                  ? ['50 AI operations each month', 'Unlimited websites', 'Advanced site analytics', 'Next.js project export']
+                  : ['20 AI operations each month', 'Up to 5 websites', 'Portfolio site analytics', 'Next.js project export']
                 ).map((item) => (
                   <div key={item} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white/80 px-4 py-3 text-sm text-gray-700 shadow-sm">
                     <Check className={`h-4 w-4 flex-shrink-0 ${welcomePlan === 'studio' ? 'text-violet-600' : 'text-indigo-600'}`} />
@@ -632,6 +632,7 @@ function PricingCard({
     ? [
         '50 AI operations / month',
         'Unlimited websites',
+        'Advanced portfolio analytics',
         'Next.js, React, and Tailwind project export',
         'Remove BaseStack watermark',
         'Priority support',
@@ -640,6 +641,7 @@ function PricingCard({
     : [
         '20 AI operations / month',
         'Up to 5 websites',
+        'Portfolio analytics dashboard',
         'Next.js, React, and Tailwind project export',
         'Remove BaseStack watermark',
         'Email support',
