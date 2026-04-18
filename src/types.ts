@@ -14,8 +14,18 @@ export interface UserData {
   photos?: string[];
 }
 
+export type SiteGenerationMode = 'html' | 'nextjs';
+
+export interface SiteProjectFile {
+  path: string;
+  content: string;
+}
+
 export interface SiteContent {
   html: string;
+  generationMode: SiteGenerationMode;
+  framework: string | null;
+  projectFiles?: SiteProjectFile[] | null;
 }
 
 // ─── Profile / Data Tree ───────────────────────────────────────────────────

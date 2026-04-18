@@ -18,3 +18,9 @@ View your app in AI Studio: https://ai.studio/apps/fd8fa4f4-964b-4d5b-94a3-5e704
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Deployment notes
+
+- Billing now runs through Supabase Edge Functions in `supabase/functions/`
+- Paid plans generate exportable Next.js portfolio projects
+- AWS + Supabase setup guide: [`docs/PAID_NEXTJS_AWS_SETUP.md`](docs/PAID_NEXTJS_AWS_SETUP.md)

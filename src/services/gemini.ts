@@ -33,8 +33,8 @@ export async function generateWebsiteContent(userData: UserData, profileTree?: P
   };
 }
 
-export async function refineWebsiteContent(currentHtml: string, refinementPrompt: string): Promise<SiteContent> {
-  const siteContent = await postJson<SiteContent>('/api/ai/refine', { currentHtml, refinementPrompt });
+export async function refineWebsiteContent(currentSite: SiteContent, refinementPrompt: string): Promise<SiteContent> {
+  const siteContent = await postJson<SiteContent>('/api/ai/refine', { siteContent: currentSite, refinementPrompt });
   return {
     ...siteContent,
     html: sanitizeGeneratedHtml(siteContent.html),

@@ -11,14 +11,42 @@ import ViewBySlug from './components/ViewBySlug';
 import DataTreePage from './components/DataTreePage';
 import Settings from './components/Settings';
 import { generateWebsiteContent, refineWebsiteContent } from './services/gemini';
-import { UserData, SiteContent, ProfileTree } from './types';
+import { UserData, SiteContent, SiteGenerationMode, SiteProjectFile } from './types';
 import { supabase } from './supabaseClient';
 import { loadProfileTree } from './services/profileTreeStore';
 import { useParams } from 'react-router-dom';
 
+type StoredSiteContent = SiteContent & {
+  id?: string;
+  slug?: string | null;
+  published_at?: string | null;
+};
+
+type SiteRow = {
+  id: string;
+  html: string;
+  slug: string | null;
+  published_at: string | null;
+  generation_mode?: SiteGenerationMode | null;
+  framework?: string | null;
+  project_files?: SiteProjectFile[] | null;
+};
+
+function mapSiteRow(row: SiteRow): StoredSiteContent {
+  return {
+    id: row.id,
+    html: row.html,
+    slug: row.slug,
+    published_at: row.published_at,
+    generationMode: row.generation_mode === 'nextjs' ? 'nextjs' : 'html',
+    framework: row.framework || null,
+    projectFiles: row.project_files || null,
+  };
+}
+
 function EditSiteFlow() {
   const { id } = useParams<{ id: string }>();
-  const [siteContent, setSiteContent] = useState<SiteContent & { id?: string; slug?: string | null; published_at?: string | null } | null>(null);
+  const [siteContent, setSiteContent] = useState<StoredSiteContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefining, setIsRefining] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,12 +58,12 @@ function EditSiteFlow() {
       try {
         const { data, error } = await supabase
           .from('pages')
-          .select('id, html, slug, published_at')
+          .select('id, html, slug, published_at, generation_mode, framework, project_files')
           .eq('id', id)
           .single();
 
         if (error) throw error;
-        setSiteContent(data);
+        setSiteContent(mapSiteRow(data as SiteRow));
       } catch (err: any) {
         console.error("Failed to fetch site for editing:", err);
         setError("Could not load the site for editing.");
@@ -60,15 +88,20 @@ function EditSiteFlow() {
         throw new Error("You have reached your AI operation limit for this plan. Go to Settings → Billing to upgrade.");
       }
 
-      const updatedContent = await refineWebsiteContent(siteContent.html, prompt);
+      const updatedContent = await refineWebsiteContent(siteContent, prompt);
       
       // Update in DB
       await supabase
         .from('pages')
-        .update({ html: updatedContent.html })
+        .update({
+          html: updatedContent.html,
+          generation_mode: updatedContent.generationMode,
+          framework: updatedContent.framework,
+          project_files: updatedContent.projectFiles ?? null,
+        })
         .eq('id', siteContent.id);
 
-      setSiteContent(prev => prev ? { ...prev, html: updatedContent.html } : null);
+      setSiteContent(prev => prev ? { ...prev, ...updatedContent } : null);
     } catch (err: any) {
       console.error("Failed to refine site:", err);
       setError(err.message || "Failed to refine your website. Please try again.");
@@ -110,7 +143,7 @@ function EditSiteFlow() {
 }
 
 function GenerateDirectlyFlow() {
-  const [siteContent, setSiteContent] = useState<SiteContent & { id?: string; slug?: string | null; published_at?: string | null } | null>(null);
+  const [siteContent, setSiteContent] = useState<StoredSiteContent | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
   const [isRefining, setIsRefining] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -172,6 +205,9 @@ function GenerateDirectlyFlow() {
           .insert({
             user_id: user.id,
             html: content.html,
+            generation_mode: content.generationMode,
+            framework: content.framework,
+            project_files: content.projectFiles ?? null,
             title: `${basicData.name}'s Site`,
             vibe: basicData.vibe
           })
@@ -180,7 +216,7 @@ function GenerateDirectlyFlow() {
           
         if (dbError) throw dbError;
 
-        setSiteContent({ html: content.html, id: savedPage.id, slug: savedPage.slug, published_at: savedPage.published_at });
+        setSiteContent(mapSiteRow(savedPage as SiteRow));
       } catch (err: any) {
         console.error("Failed to generate site directly:", err);
         setError(err.message || "Failed to generate your website. Please try again.");
@@ -209,11 +245,16 @@ function GenerateDirectlyFlow() {
       if (!canGenerate) {
         throw new Error("You have reached your AI operation limit for this plan. Go to Settings → Billing to upgrade.");
       }
-      const updatedContent = await refineWebsiteContent(siteContent.html, prompt);
+      const updatedContent = await refineWebsiteContent(siteContent, prompt);
       
       // Update in DB
-      await supabase.from('pages').update({ html: updatedContent.html }).eq('id', siteContent.id);
-      setSiteContent(prev => prev ? { ...prev, html: updatedContent.html } : null);
+      await supabase.from('pages').update({
+        html: updatedContent.html,
+        generation_mode: updatedContent.generationMode,
+        framework: updatedContent.framework,
+        project_files: updatedContent.projectFiles ?? null,
+      }).eq('id', siteContent.id);
+      setSiteContent(prev => prev ? { ...prev, ...updatedContent } : null);
     } catch (err: any) {
       setError(err.message || "Failed to refine.");
     } finally {

@@ -150,7 +150,7 @@ export default function FormFlow({ onSubmit, isGenerating }: FormFlowProps) {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
+    Array.from(files as FileList).forEach((file: File) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({

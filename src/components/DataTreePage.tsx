@@ -850,23 +850,24 @@ export default function DataTreePage() {
             <Section icon={Briefcase} title="Work Experience" count={tree.experience.length}>
               <AnimatePresence>
                 {tree.experience.map((exp) => (
-                  <EntryCard
-                    key={exp.id}
-                    title={exp.company || ''}
-                    subtitle={exp.title || undefined}
-                    onDelete={() => delExp(exp.id)}
-                  >
-                    <InlineField label="Company" value={exp.company} onChange={(v) => setExp(exp.id, 'company', v)} placeholder="Google" />
-                    <InlineField label="Job Title" value={exp.title} onChange={(v) => setExp(exp.id, 'title', v)} placeholder="Senior Engineer" />
-                    <InlineField label="Duration" value={exp.duration} onChange={(v) => setExp(exp.id, 'duration', v)} placeholder="Jan 2022 – Present" />
-                    <InlineField label="Company URL" value={exp.url} onChange={(v) => setExp(exp.id, 'url', v)} placeholder="https://google.com" type="url" />
-                    <div className="sm:col-span-2">
-                      <InlineField label="Description" value={exp.description} onChange={(v) => setExp(exp.id, 'description', v)} placeholder="What did you do?" multiline />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <InlineField label="Key Achievements" value={exp.achievements} onChange={(v) => setExp(exp.id, 'achievements', v)} placeholder="• Led team of 5… • Reduced load time by 40%…" multiline />
-                    </div>
-                  </EntryCard>
+                  <div key={exp.id}>
+                    <EntryCard
+                      title={exp.company || ''}
+                      subtitle={exp.title || undefined}
+                      onDelete={() => delExp(exp.id)}
+                    >
+                      <InlineField label="Company" value={exp.company} onChange={(v) => setExp(exp.id, 'company', v)} placeholder="Google" />
+                      <InlineField label="Job Title" value={exp.title} onChange={(v) => setExp(exp.id, 'title', v)} placeholder="Senior Engineer" />
+                      <InlineField label="Duration" value={exp.duration} onChange={(v) => setExp(exp.id, 'duration', v)} placeholder="Jan 2022 – Present" />
+                      <InlineField label="Company URL" value={exp.url} onChange={(v) => setExp(exp.id, 'url', v)} placeholder="https://google.com" type="url" />
+                      <div className="sm:col-span-2">
+                        <InlineField label="Description" value={exp.description} onChange={(v) => setExp(exp.id, 'description', v)} placeholder="What did you do?" multiline />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <InlineField label="Key Achievements" value={exp.achievements} onChange={(v) => setExp(exp.id, 'achievements', v)} placeholder="• Led team of 5… • Reduced load time by 40%…" multiline />
+                      </div>
+                    </EntryCard>
+                  </div>
                 ))}
               </AnimatePresence>
               <AddButton label="Add Experience" onClick={addExp} />
@@ -878,21 +879,22 @@ export default function DataTreePage() {
             <Section icon={GraduationCap} title="Education" count={tree.education.length}>
               <AnimatePresence>
                 {tree.education.map((edu) => (
-                  <EntryCard
-                    key={edu.id}
-                    title={edu.school || ''}
-                    subtitle={edu.degree ? `${edu.degree}${edu.field ? ` in ${edu.field}` : ''}` : undefined}
-                    onDelete={() => delEdu(edu.id)}
-                  >
-                    <InlineField label="School" value={edu.school} onChange={(v) => setEdu(edu.id, 'school', v)} placeholder="MIT" />
-                    <InlineField label="Degree" value={edu.degree} onChange={(v) => setEdu(edu.id, 'degree', v)} placeholder="B.S. / M.S. / PhD" />
-                    <InlineField label="Field of Study" value={edu.field} onChange={(v) => setEdu(edu.id, 'field', v)} placeholder="Computer Science" />
-                    <InlineField label="Graduation Year" value={edu.year} onChange={(v) => setEdu(edu.id, 'year', v)} placeholder="2024" />
-                    <InlineField label="GPA" value={edu.gpa} onChange={(v) => setEdu(edu.id, 'gpa', v)} placeholder="3.9 / 4.0" />
-                    <div className="sm:col-span-2">
-                      <InlineField label="Highlights / Activities" value={edu.highlights} onChange={(v) => setEdu(edu.id, 'highlights', v)} placeholder="Dean's List, Robotics Club, Hackathon winner…" multiline />
-                    </div>
-                  </EntryCard>
+                  <div key={edu.id}>
+                    <EntryCard
+                      title={edu.school || ''}
+                      subtitle={edu.degree ? `${edu.degree}${edu.field ? ` in ${edu.field}` : ''}` : undefined}
+                      onDelete={() => delEdu(edu.id)}
+                    >
+                      <InlineField label="School" value={edu.school} onChange={(v) => setEdu(edu.id, 'school', v)} placeholder="MIT" />
+                      <InlineField label="Degree" value={edu.degree} onChange={(v) => setEdu(edu.id, 'degree', v)} placeholder="B.S. / M.S. / PhD" />
+                      <InlineField label="Field of Study" value={edu.field} onChange={(v) => setEdu(edu.id, 'field', v)} placeholder="Computer Science" />
+                      <InlineField label="Graduation Year" value={edu.year} onChange={(v) => setEdu(edu.id, 'year', v)} placeholder="2024" />
+                      <InlineField label="GPA" value={edu.gpa} onChange={(v) => setEdu(edu.id, 'gpa', v)} placeholder="3.9 / 4.0" />
+                      <div className="sm:col-span-2">
+                        <InlineField label="Highlights / Activities" value={edu.highlights} onChange={(v) => setEdu(edu.id, 'highlights', v)} placeholder="Dean's List, Robotics Club, Hackathon winner…" multiline />
+                      </div>
+                    </EntryCard>
+                  </div>
                 ))}
               </AnimatePresence>
               <AddButton label="Add Education" onClick={addEdu} />
@@ -951,28 +953,29 @@ export default function DataTreePage() {
             <Section icon={Rocket} title="Projects" count={tree.projects.length}>
               <AnimatePresence>
                 {tree.projects.map((proj) => (
-                  <EntryCard
-                    key={proj.id}
-                    title={proj.name || ''}
-                    subtitle={proj.status || undefined}
-                    onDelete={() => delProject(proj.id)}
-                  >
-                    <InlineField label="Project Name" value={proj.name} onChange={(v) => setProject(proj.id, 'name', v)} placeholder="BaseStack" />
-                    <SelectField
-                      label="Status"
-                      value={proj.status}
-                      onChange={(v) => setProject(proj.id, 'status', v)}
-                      options={['Active', 'Completed', 'Archived', 'In Progress']}
-                    />
-                    <InlineField label="Live URL" value={proj.url} onChange={(v) => setProject(proj.id, 'url', v)} placeholder="https://yourproject.com" type="url" />
-                    <InlineField label="Tech Stack" value={proj.stack} onChange={(v) => setProject(proj.id, 'stack', v)} placeholder="React, Supabase, TypeScript…" />
-                    <div className="sm:col-span-2">
-                      <InlineField label="Description" value={proj.description} onChange={(v) => setProject(proj.id, 'description', v)} placeholder="What does this project do?" multiline />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <InlineField label="Highlights / Impact" value={proj.highlights} onChange={(v) => setProject(proj.id, 'highlights', v)} placeholder="• 1,000 users in first week…" multiline />
-                    </div>
-                  </EntryCard>
+                  <div key={proj.id}>
+                    <EntryCard
+                      title={proj.name || ''}
+                      subtitle={proj.status || undefined}
+                      onDelete={() => delProject(proj.id)}
+                    >
+                      <InlineField label="Project Name" value={proj.name} onChange={(v) => setProject(proj.id, 'name', v)} placeholder="BaseStack" />
+                      <SelectField
+                        label="Status"
+                        value={proj.status}
+                        onChange={(v) => setProject(proj.id, 'status', v)}
+                        options={['Active', 'Completed', 'Archived', 'In Progress']}
+                      />
+                      <InlineField label="Live URL" value={proj.url} onChange={(v) => setProject(proj.id, 'url', v)} placeholder="https://yourproject.com" type="url" />
+                      <InlineField label="Tech Stack" value={proj.stack} onChange={(v) => setProject(proj.id, 'stack', v)} placeholder="React, Supabase, TypeScript…" />
+                      <div className="sm:col-span-2">
+                        <InlineField label="Description" value={proj.description} onChange={(v) => setProject(proj.id, 'description', v)} placeholder="What does this project do?" multiline />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <InlineField label="Highlights / Impact" value={proj.highlights} onChange={(v) => setProject(proj.id, 'highlights', v)} placeholder="• 1,000 users in first week…" multiline />
+                      </div>
+                    </EntryCard>
+                  </div>
                 ))}
               </AnimatePresence>
               <AddButton label="Add Project" onClick={addProject} />
@@ -984,19 +987,20 @@ export default function DataTreePage() {
             <Section icon={Trophy} title="Achievements" count={tree.achievements.length}>
               <AnimatePresence>
                 {tree.achievements.map((ach) => (
-                  <EntryCard
-                    key={ach.id}
-                    title={ach.title || ''}
-                    subtitle={ach.organization ? `${ach.organization}${ach.year ? ` · ${ach.year}` : ''}` : undefined}
-                    onDelete={() => delAch(ach.id)}
-                  >
-                    <InlineField label="Award / Certification" value={ach.title} onChange={(v) => setAch(ach.id, 'title', v)} placeholder="1st Place Hackathon" />
-                    <InlineField label="Organization" value={ach.organization} onChange={(v) => setAch(ach.id, 'organization', v)} placeholder="HackMIT" />
-                    <InlineField label="Year" value={ach.year} onChange={(v) => setAch(ach.id, 'year', v)} placeholder="2024" />
-                    <div className="sm:col-span-2">
-                      <InlineField label="Description" value={ach.description} onChange={(v) => setAch(ach.id, 'description', v)} placeholder="What did you achieve?" multiline />
-                    </div>
-                  </EntryCard>
+                  <div key={ach.id}>
+                    <EntryCard
+                      title={ach.title || ''}
+                      subtitle={ach.organization ? `${ach.organization}${ach.year ? ` · ${ach.year}` : ''}` : undefined}
+                      onDelete={() => delAch(ach.id)}
+                    >
+                      <InlineField label="Award / Certification" value={ach.title} onChange={(v) => setAch(ach.id, 'title', v)} placeholder="1st Place Hackathon" />
+                      <InlineField label="Organization" value={ach.organization} onChange={(v) => setAch(ach.id, 'organization', v)} placeholder="HackMIT" />
+                      <InlineField label="Year" value={ach.year} onChange={(v) => setAch(ach.id, 'year', v)} placeholder="2024" />
+                      <div className="sm:col-span-2">
+                        <InlineField label="Description" value={ach.description} onChange={(v) => setAch(ach.id, 'description', v)} placeholder="What did you achieve?" multiline />
+                      </div>
+                    </EntryCard>
+                  </div>
                 ))}
               </AnimatePresence>
               <AddButton label="Add Achievement" onClick={addAch} />
@@ -1008,14 +1012,15 @@ export default function DataTreePage() {
             <Section icon={Link2} title="Social Links">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {(Object.keys(tree.social) as (keyof ProfileTree['social'])[]).map((key) => (
-                  <InlineField
-                    key={key}
-                    label={key.charAt(0).toUpperCase() + key.slice(1)}
-                    value={tree.social[key]}
-                    onChange={(v) => setSocial(key, v)}
-                    placeholder={`https://${key === 'other' ? 'yoursite.com' : `${key}.com/username`}`}
-                    type="url"
-                  />
+                  <div key={key}>
+                    <InlineField
+                      label={key.charAt(0).toUpperCase() + key.slice(1)}
+                      value={tree.social[key]}
+                      onChange={(v) => setSocial(key, v)}
+                      placeholder={`https://${key === 'other' ? 'yoursite.com' : `${key}.com/username`}`}
+                      type="url"
+                    />
+                  </div>
                 ))}
               </div>
             </Section>

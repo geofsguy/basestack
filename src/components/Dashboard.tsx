@@ -29,6 +29,8 @@ interface Page {
   html: string;
   slug: string | null;
   published_at: string | null;
+  generation_mode?: 'html' | 'nextjs' | null;
+  framework?: string | null;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -122,7 +124,7 @@ export default function Dashboard() {
 
       const { data, error } = await supabase
         .from('pages')
-        .select('id, created_at, title, vibe, html, slug, published_at')
+        .select('id, created_at, title, vibe, html, slug, published_at, generation_mode, framework')
         .eq('user_id', userData.user.id)
         .order('created_at', { ascending: false });
 
@@ -140,8 +142,8 @@ export default function Dashboard() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
       const { data } = await supabase
-        .from('profile_trees')
-        .select('id')
+        .from('user_profiles')
+        .select('user_id')
         .eq('user_id', userData.user.id)
         .maybeSingle();
       setHasDataTree(!!data);
@@ -191,14 +193,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#fcfcfc] p-6 lg:p-12 relative overflow-hidden font-sans">
-      {/* Dot-grid background */}
-      <div
-        className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
-          backgroundSize: '24px 24px',
-        }}
-      />
+      {/* Background Grid */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
+          }}
+        />
+      </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
         {/* ── Header ── */}
@@ -240,12 +244,13 @@ export default function Dashboard() {
               { label: 'Total Sites', value: pages.length, icon: LayoutTemplate, color: 'text-gray-900' },
               { label: 'Live', value: liveSites, icon: Globe, color: 'text-emerald-600' },
               { label: 'Drafts', value: draftSites, icon: FileText, color: 'text-amber-500' },
-            ].map(({ label, value, icon: Icon, color }) => (
+            ].map(({ label, value, icon: Icon, color }, i) => (
               <div
                 key={label}
-                className="bg-white border border-gray-100 rounded-2xl px-6 py-5 shadow-sm flex items-center gap-4"
+                className="bg-white/80 backdrop-blur-md border border-gray-100 rounded-2xl px-6 py-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-8 fill-mode-both"
+                style={{ animationDelay: `${i * 100}ms`, animationDuration: '600ms' }}
               >
-                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-gray-50/80 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Icon className={`w-5 h-5 ${color}`} />
                 </div>
                 <div>
@@ -274,9 +279,9 @@ export default function Dashboard() {
           </div>
           <Link
             to="/create"
-            className="flex items-center px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 transition-colors"
+            className="flex items-center px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 hover:scale-105 hover:shadow-lg transition-all group"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform duration-300" />
             Create New Site
           </Link>
         </div>
@@ -290,9 +295,12 @@ export default function Dashboard() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black" />
               </div>
             ) : pages.length === 0 ? (
-              <div className="bg-white border border-gray-100 rounded-3xl p-12 text-center shadow-sm">
-                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                  <LayoutTemplate className="w-8 h-8 text-gray-400" />
+              <div className="bg-white/80 backdrop-blur-md border border-gray-100 rounded-3xl p-12 text-center shadow-sm animate-in fade-in slide-in-from-bottom-8 duration-700">
+                <div className="relative w-20 h-20 mx-auto mb-6 group cursor-default">
+                  <div className="absolute inset-0 bg-indigo-100 rounded-2xl rotate-6 animate-pulse" style={{ animationDuration: '3s' }} />
+                  <div className="absolute inset-0 bg-white border border-gray-200 rounded-2xl flex items-center justify-center shadow-md transform -rotate-3 transition-transform group-hover:rotate-0">
+                    <LayoutTemplate className="w-8 h-8 text-indigo-500" />
+                  </div>
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">No sites yet</h3>
                 <p className="text-gray-500 mb-8 max-w-sm mx-auto">
@@ -300,18 +308,19 @@ export default function Dashboard() {
                 </p>
                 <Link
                   to="/create"
-                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 transition-colors"
+                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 hover:scale-105 transition-all shadow-md group"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform duration-300" />
                   Create your first site
                 </Link>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {pages.map((page) => (
+                {pages.map((page, i) => (
                   <div
                     key={page.id}
-                    className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full"
+                    className="bg-white/90 backdrop-blur-sm border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 group flex flex-col h-full animate-in fade-in zoom-in-95 fill-mode-both"
+                    style={{ animationDelay: `${i * 100 + 100}ms`, animationDuration: '500ms' }}
                   >
                     <div className="p-6 flex-1">
                       <div className="flex items-start justify-between mb-5">
@@ -332,7 +341,16 @@ export default function Dashboard() {
                       <h3 className="text-base font-medium tracking-tight text-gray-900 mb-1">
                         {page.title || 'Untitled Site'}
                       </h3>
-                      <p className="text-sm text-gray-400 mb-3">{page.vibe || 'Random Vibe'}</p>
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <p className="text-sm text-gray-400">{page.vibe || 'Random Vibe'}</p>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                          page.generation_mode === 'nextjs'
+                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                            : 'bg-gray-50 text-gray-500 border border-gray-100'
+                        }`}>
+                          {page.generation_mode === 'nextjs' ? 'Next.js' : 'HTML'}
+                        </span>
+                      </div>
                       {page.published_at && page.slug && (
                         <p className="text-xs font-mono text-gray-400 truncate mb-1">/s/{page.slug}</p>
                       )}
@@ -386,7 +404,7 @@ export default function Dashboard() {
 
           {/* ── Right Sidebar ── */}
           {!loading && (
-            <div className="w-72 flex-shrink-0 space-y-5">
+            <div className="w-72 flex-shrink-0 space-y-5 animate-in fade-in slide-in-from-right-8 duration-700 fill-mode-both" style={{ animationDelay: '300ms' }}>
 
               {/* Getting Started checklist */}
               {!allDone && (

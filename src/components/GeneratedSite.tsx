@@ -30,12 +30,14 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
   const [liveSlug, setLiveSlug] = useState<string | null>(content.slug || null);
   const [isLive, setIsLive] = useState(!!content.published_at);
   const [copied, setCopied] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [isPickerActive, setIsPickerActive] = useState(false);
   const [pickedElements, setPickedElements] = useState<PickedElement[]>([]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const sanitizedHtml = sanitizeGeneratedHtml(content.html);
 
   const liveUrl = liveSlug ? `${window.location.origin}/s/${liveSlug}` : null;
+  const isPaidProject = content.generationMode === 'nextjs' && !!content.projectFiles?.length;
 
   // ── Broadcast picker state to iframe whenever it toggles ──────────────────
   useEffect(() => {
@@ -105,6 +107,29 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
   const handlePublished = ({ slug }: { slug: string; publishedAt: string }) => {
     setLiveSlug(slug);
     setIsLive(true);
+  };
+
+  const handleExportProject = async () => {
+    if (!content.projectFiles?.length || isExporting) return;
+
+    setIsExporting(true);
+    try {
+      const { default: JSZip } = await import('jszip');
+      const zip = new JSZip();
+      content.projectFiles.forEach((file) => {
+        zip.file(file.path, file.content);
+      });
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${(liveSlug || content.id || 'basestack-site').replace(/[^a-z0-9-]/gi, '-').toLowerCase()}.zip`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const removePicked = (id: string) => {
@@ -244,9 +269,18 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
       <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-50 pointer-events-none">
         <div className="bg-white/90 backdrop-blur-md border border-gray-200 text-black px-4 py-2 rounded-full text-sm font-medium shadow-sm pointer-events-auto flex items-center">
           <span className="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse" />
-          Preview Mode
+          {isPaidProject ? 'Next.js Preview' : 'HTML Preview'}
         </div>
         <div className="flex items-center space-x-3 pointer-events-auto">
+          {isPaidProject && (
+            <button
+              onClick={handleExportProject}
+              disabled={isExporting}
+              className="bg-white/90 backdrop-blur-md border border-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium hover:border-gray-400 hover:text-gray-900 transition-all shadow-sm disabled:opacity-60"
+            >
+              {isExporting ? 'Preparing zip...' : 'Export Next.js'}
+            </button>
+          )}
           <button 
             onClick={() => setIsSidebarOpen(true)}
             className="bg-white/90 backdrop-blur-md border border-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium hover:border-gray-400 hover:text-gray-900 transition-all shadow-sm flex items-center"
@@ -294,6 +328,11 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
           title="Generated Site"
           sandbox="allow-scripts"
         />
+        {isPaidProject && (
+          <div className="absolute left-1/2 top-20 z-30 -translate-x-1/2 rounded-full border border-indigo-100 bg-white/90 px-4 py-2 text-xs font-medium text-indigo-700 shadow-sm backdrop-blur-md">
+            This in-app preview mirrors the deployable Next.js project included with your paid plan.
+          </div>
+        )}
         {/* Watermark — rendered outside the iframe so it can't be removed via HTML editing */}
         <Watermark />
         {isRefining && (
