@@ -78,7 +78,7 @@ export default function GenerationModePicker({
             Choose your foundation
           </h1>
           <p className="text-lg text-neutral-500 leading-relaxed font-light animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 fill-mode-both [text-wrap:balance]">
-            Both engines compile to a stunning final product. The difference lies in how you plan to host, scale, and iterate on your code after it's generated.
+            Both engines compile to a stunning final product. We host your site automatically on our reliable cloud servers, and you always have the option to export the code to self-host.
           </p>
         </div>
 
