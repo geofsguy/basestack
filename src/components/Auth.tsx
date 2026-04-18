@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import Logo from './Logo';
+import { Linkedin, Loader2 } from 'lucide-react';
+import { startLinkedInOAuth } from '../services/linkedinAuth';
 
 export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<'password' | 'linkedin' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setLoading('password');
     setError(null);
 
     try {
@@ -28,7 +30,20 @@ export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
     } catch (err: any) {
       setError(err.message || 'An error occurred during authentication');
     } finally {
-      setLoading(false);
+      setLoading(null);
+    }
+  };
+
+  const handleLinkedInAuth = async () => {
+    setLoading('linkedin');
+    setError(null);
+
+    try {
+      const { error } = await startLinkedInOAuth('/dashboard');
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || 'Unable to start LinkedIn sign-in right now.');
+      setLoading(null);
     }
   };
 
@@ -86,12 +101,37 @@ export default function Auth({ onAuthSuccess }: { onAuthSuccess: () => void }) {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading !== null}
             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors disabled:opacity-70"
           >
-            {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Sign Up'}
+            {loading === 'password' ? 'Processing...' : isLogin ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-gray-100" />
+          <span className="text-xs font-medium uppercase tracking-[0.18em] text-gray-300">or</span>
+          <div className="h-px flex-1 bg-gray-100" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleLinkedInAuth}
+          disabled={loading !== null}
+          className="w-full flex items-center justify-center gap-2.5 rounded-full border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-all hover:border-gray-300 hover:bg-gray-50 disabled:opacity-70"
+        >
+          {loading === 'linkedin' ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Connecting to LinkedIn...
+            </>
+          ) : (
+            <>
+              <Linkedin className="w-4 h-4" />
+              Continue with LinkedIn
+            </>
+          )}
+        </button>
 
         <div className="mt-8 text-center">
           <button

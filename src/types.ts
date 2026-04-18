@@ -109,6 +109,18 @@ export interface CustomField {
   value: string;
 }
 
+export interface LinkedInConnection {
+  connected: boolean;
+  provider: string;
+  connectedAt: string;
+  lastSyncedAt: string;
+  email: string;
+  name: string;
+  headline: string;
+  avatarUrl: string;
+  profileUrl: string;
+}
+
 export interface ProfileTree {
   identity: {
     name: string;
@@ -146,6 +158,7 @@ export interface ProfileTree {
     currentlyLearning: string;
     openTo: string;
   };
+  linkedinConnection: LinkedInConnection;
   custom: CustomField[];
   /** Base64 data-URL strings for photos the user uploaded */
   photos?: string[];
@@ -161,6 +174,17 @@ export const defaultProfileTree: ProfileTree = {
   social: { github: '', linkedin: '', twitter: '', portfolio: '', youtube: '', instagram: '', other: '' },
   personal: { interests: '', languages: '', values: '', funFacts: '', personalityType: '' },
   goals: { shortTerm: '', longTerm: '', currentlyLearning: '', openTo: '' },
+  linkedinConnection: {
+    connected: false,
+    provider: '',
+    connectedAt: '',
+    lastSyncedAt: '',
+    email: '',
+    name: '',
+    headline: '',
+    avatarUrl: '',
+    profileUrl: '',
+  },
   custom: [],
   photos: [],
 };

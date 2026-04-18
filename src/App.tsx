@@ -12,7 +12,7 @@ import DataTreePage from './components/DataTreePage';
 import Settings from './components/Settings';
 import GenerationModePicker from './components/GenerationModePicker';
 import { generateWebsiteContent, refineWebsiteContent } from './services/gemini';
-import { UserData, SiteContent, SiteGenerationMode, SiteProjectFile } from './types';
+import { UserData, SiteContent, SiteGenerationMode, SiteProjectFile, defaultProfileTree } from './types';
 import { supabase } from './supabaseClient';
 import { loadProfileTree } from './services/profileTreeStore';
 import { normalizeTier, SubscriptionTier } from './lib/plan';
@@ -363,14 +363,7 @@ function CreateSiteFlow() {
       // Load existing tree or start fresh
       let profileTree = await loadProfileTree(user.id);
       if (!profileTree) {
-        profileTree = {
-          identity: { name: '', role: '', location: '', bio: '', tagline: '', availability: '', email: '' },
-          experience: [], education: [], skills: [], projects: [], achievements: [],
-          social: { github: '', linkedin: '', twitter: '', portfolio: '', youtube: '', instagram: '', other: '' },
-          personal: { interests: '', languages: '', values: '', funFacts: '', personalityType: '' },
-          goals: { shortTerm: '', longTerm: '', currentlyLearning: '', openTo: '' },
-          custom: [],
-        };
+        profileTree = { ...defaultProfileTree };
       }
 
       // Update tree with onboarding data

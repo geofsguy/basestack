@@ -4,7 +4,7 @@ import {
   User, Briefcase, GraduationCap, Cpu, Rocket, Trophy,
   Link2, Heart, Target, Plus, Trash2, ChevronDown, X,
   Linkedin, Loader2, CheckCircle2, AlertCircle, Save,
-  ArrowLeft, Sparkles, ExternalLink,
+  ArrowLeft, Sparkles, ExternalLink, RefreshCw,
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { ProfileTree, defaultProfileTree, ExperienceEntry, EducationEntry, SkillEntry, ProjectEntry, AchievementEntry, CustomField } from '../types';
@@ -12,11 +12,70 @@ import Logo from './Logo';
 import { useNavigate } from 'react-router-dom';
 import { parseLinkedInText } from '../services/gemini';
 import { loadProfileTree, saveProfileTree, deleteProfileTree } from '../services/profileTreeStore';
+import { getLinkedInConnectionFromSession, linkLinkedInIdentity, syncLinkedInConnectionIntoTree } from '../services/linkedinAuth';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+function mergeImportedTree(prev: ProfileTree, partial: Partial<ProfileTree>) {
+  const next = { ...prev };
+
+  if (partial.identity) {
+    next.identity = {
+      ...prev.identity,
+      ...Object.fromEntries(Object.entries(partial.identity).filter(([, value]) => value)),
+    };
+  }
+
+  if (partial.social) {
+    next.social = {
+      ...prev.social,
+      ...Object.fromEntries(Object.entries(partial.social).filter(([, value]) => value)),
+    };
+  }
+
+  if (partial.personal) {
+    next.personal = {
+      ...prev.personal,
+      ...Object.fromEntries(Object.entries(partial.personal).filter(([, value]) => value)),
+    };
+  }
+
+  if (partial.goals) {
+    next.goals = {
+      ...prev.goals,
+      ...Object.fromEntries(Object.entries(partial.goals).filter(([, value]) => value)),
+    };
+  }
+
+  if (partial.linkedinConnection) {
+    next.linkedinConnection = { ...prev.linkedinConnection, ...partial.linkedinConnection };
+  }
+
+  if (partial.experience?.length) {
+    next.experience = [...prev.experience, ...partial.experience.map((entry) => ({ ...entry, id: uid() }))];
+  }
+
+  if (partial.education?.length) {
+    next.education = [...prev.education, ...partial.education.map((entry) => ({ ...entry, id: uid() }))];
+  }
+
+  if (partial.skills?.length) {
+    next.skills = [...prev.skills, ...partial.skills.map((entry) => ({ ...entry, id: uid() }))];
+  }
+
+  if (partial.projects?.length) {
+    next.projects = [...prev.projects, ...partial.projects.map((entry) => ({ ...entry, id: uid() }))];
+  }
+
+  if (partial.achievements?.length) {
+    next.achievements = [...prev.achievements, ...partial.achievements.map((entry) => ({ ...entry, id: uid() }))];
+  }
+
+  return next;
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -237,11 +296,21 @@ function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
 function LinkedInModal({
   onClose,
   onApply,
+  connection,
+  connectionBusy,
+  connectionError,
+  onConnect,
+  onRefresh,
 }: {
   onClose: () => void;
   onApply: (partial: Partial<ProfileTree>) => void;
+  connection: ProfileTree['linkedinConnection'];
+  connectionBusy: boolean;
+  connectionError: string;
+  onConnect: () => void;
+  onRefresh: () => void;
 }) {
-  const [tab, setTab] = useState<'paste' | 'csv'>('paste');
+  const [tab, setTab] = useState<'connect' | 'paste' | 'csv'>('connect');
   const [text, setText] = useState('');
   const [status, setStatus] = useState<'idle' | 'parsing' | 'done' | 'error'>('idle');
   const [parsed, setParsed] = useState<Partial<ProfileTree> | null>(null);
@@ -311,23 +380,99 @@ function LinkedInModal({
               <Linkedin className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-medium tracking-tight text-gray-900">Import from LinkedIn</h2>
-              <p className="text-sm text-gray-400">Paste your profile text and AI will fill your Data Tree</p>
+              <h2 className="text-xl font-medium tracking-tight text-gray-900">Connect LinkedIn</h2>
+              <p className="text-sm text-gray-400">Use an official LinkedIn account connection first, then fall back to import if you need richer resume data.</p>
             </div>
           </div>
 
           {/* Tabs */}
           <div className="flex gap-1 bg-gray-50 border border-gray-100 rounded-2xl p-1 mt-5 mb-5">
-            {(['paste', 'csv'] as const).map((t) => (
+            {(['connect', 'paste', 'csv'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
               >
-                {t === 'paste' ? '📋  Paste Profile Text' : '📁  Upload Export CSV'}
+                {t === 'connect' ? 'Official Connection' : t === 'paste' ? 'Paste Profile Text' : 'Export Archive'}
               </button>
             ))}
           </div>
+
+          {tab === 'connect' && (
+            <div className="space-y-4">
+              <div className={`rounded-[1.75rem] border px-5 py-5 ${connection.connected ? 'border-emerald-100 bg-emerald-50/80' : 'border-gray-200 bg-gray-50'}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border ${connection.connected ? 'border-emerald-200 bg-white' : 'border-gray-200 bg-white'}`}>
+                      {connection.avatarUrl ? (
+                        <img src={connection.avatarUrl} alt="LinkedIn avatar" className="h-full w-full object-cover" />
+                      ) : (
+                        <Linkedin className={`w-6 h-6 ${connection.connected ? 'text-emerald-600' : 'text-gray-500'}`} />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {connection.connected ? 'LinkedIn account connected' : 'Connect your LinkedIn account'}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-gray-500">
+                        {connection.connected
+                          ? 'BaseStack can now reliably sync the core identity fields LinkedIn officially shares.'
+                          : 'This uses LinkedIn’s official sign-in flow through Supabase for a cleaner, more stable connection.'}
+                      </p>
+                      {(connection.name || connection.email || connection.headline) && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {connection.name && <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-gray-600 border border-gray-200">{connection.name}</span>}
+                          {connection.headline && <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-gray-600 border border-gray-200">{connection.headline}</span>}
+                          {connection.email && <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-gray-600 border border-gray-200">{connection.email}</span>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={connection.connected ? onRefresh : onConnect}
+                    disabled={connectionBusy}
+                    className="flex-shrink-0 rounded-full bg-black px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {connectionBusy ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        {connection.connected ? 'Refreshing...' : 'Connecting...'}
+                      </span>
+                    ) : connection.connected ? (
+                      <span className="inline-flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4" />
+                        Refresh Sync
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-2">
+                        <Linkedin className="w-4 h-4" />
+                        Connect LinkedIn
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-gray-100 bg-white px-4 py-4">
+                  <p className="text-sm font-medium text-gray-900">Officially synced</p>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500">Name, headline, profile photo, and primary email when LinkedIn shares them.</p>
+                </div>
+                <div className="rounded-2xl border border-gray-100 bg-white px-4 py-4">
+                  <p className="text-sm font-medium text-gray-900">Stable identity</p>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500">A professional account link is less brittle than copy-pasting your profile every time.</p>
+                </div>
+                <div className="rounded-2xl border border-gray-100 bg-white px-4 py-4">
+                  <p className="text-sm font-medium text-gray-900">Fallback import</p>
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500">Use the import tabs below if you want experience, education, skills, and projects filled in too.</p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-[13px] leading-relaxed text-blue-700">
+                LinkedIn’s open sign-in permissions are intentionally limited. For deeper resume-style sections, paste your profile text or import a LinkedIn data export after connecting.
+              </div>
+            </div>
+          )}
 
           {tab === 'paste' && (
             <div className="space-y-4">
@@ -356,6 +501,12 @@ function LinkedInModal({
           )}
 
           {/* Status */}
+          {connectionError && (
+            <div className="mt-4 flex items-center gap-2 text-sm text-red-500 bg-red-50 rounded-2xl px-4 py-3">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {connectionError}
+            </div>
+          )}
           {status === 'error' && (
             <div className="mt-4 flex items-center gap-2 text-sm text-red-500 bg-red-50 rounded-2xl px-4 py-3">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -381,7 +532,11 @@ function LinkedInModal({
 
           {/* Actions */}
           <div className="flex gap-3 mt-6">
-            {status !== 'done' ? (
+            {tab === 'connect' ? (
+              <button onClick={onClose} className="flex-1 px-5 py-3 rounded-full border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors">
+                Close
+              </button>
+            ) : status !== 'done' ? (
               <button
                 onClick={handleParse}
                 disabled={!text.trim() || status === 'parsing'}
@@ -492,7 +647,7 @@ function DataTreeWelcomeModal({
           </div>
 
           <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-relaxed text-blue-700">
-            Tip: you can start by importing LinkedIn, then refine the details section by section.
+            Tip: connect LinkedIn first for the official account link, then use import only when you want deeper resume details filled in.
           </div>
 
           <div className="mt-6 flex gap-3">
@@ -608,8 +763,15 @@ export default function DataTreePage() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showLinkedIn, setShowLinkedIn] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [linkedinBusy, setLinkedinBusy] = useState(false);
+  const [linkedinError, setLinkedinError] = useState('');
   const [loaded, setLoaded] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const treeRef = useRef(tree);
+
+  useEffect(() => {
+    treeRef.current = tree;
+  }, [tree]);
 
   const handleDeleteTree = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -627,9 +789,27 @@ export default function DataTreePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const profileTree = await loadProfileTree(user.id);
-      if (profileTree) {
-        setTree({ ...defaultProfileTree, ...profileTree });
+      let nextTree = profileTree
+        ? { ...defaultProfileTree, ...profileTree }
+        : defaultProfileTree;
+
+      const linkedinSnapshot = await getLinkedInConnectionFromSession();
+      if (linkedinSnapshot) {
+        nextTree = syncLinkedInConnectionIntoTree(nextTree, linkedinSnapshot);
       }
+
+      if (profileTree) {
+        const previousTreeJson = JSON.stringify({ ...defaultProfileTree, ...profileTree });
+        const nextTreeJson = JSON.stringify(nextTree);
+        if (previousTreeJson !== nextTreeJson) {
+          saveProfileTree(user.id, nextTree).catch((error) => {
+            console.error('Failed to persist LinkedIn sync:', error);
+          });
+        }
+      }
+
+      setTree(nextTree);
+
       if (typeof window !== 'undefined' && !window.localStorage.getItem(DATA_TREE_WELCOME_KEY)) {
         setShowWelcome(true);
       }
@@ -667,6 +847,33 @@ export default function DataTreePage() {
       return next;
     });
   }, [persist]);
+
+  const refreshLinkedInConnection = useCallback(async (forceTimestamp = false) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const snapshot = await getLinkedInConnectionFromSession();
+    if (!snapshot) return;
+
+    const nextTree = syncLinkedInConnectionIntoTree(treeRef.current, snapshot, forceTimestamp);
+    if (JSON.stringify(nextTree) === JSON.stringify(treeRef.current)) {
+      return;
+    }
+
+    setTree(nextTree);
+    treeRef.current = nextTree;
+    await persist(nextTree);
+  }, [persist]);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        void refreshLinkedInConnection();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [refreshLinkedInConnection]);
 
   // ── Identity ──────────────────────────────────────────────────────────────
   const setId = (key: keyof ProfileTree['identity'], val: string) =>
@@ -746,19 +953,34 @@ export default function DataTreePage() {
 
   // ── LinkedIn Apply ────────────────────────────────────────────────────────
   const applyLinkedIn = (partial: Partial<ProfileTree>) => {
-    updateTree((prev) => {
-      const next = { ...prev };
-      if (partial.identity) next.identity = { ...prev.identity, ...Object.fromEntries(Object.entries(partial.identity).filter(([, v]) => v)) };
-      if (partial.social) next.social = { ...prev.social, ...Object.fromEntries(Object.entries(partial.social).filter(([, v]) => v)) };
-      if (partial.personal) next.personal = { ...prev.personal, ...Object.fromEntries(Object.entries(partial.personal).filter(([, v]) => v)) };
-      if (partial.goals) next.goals = { ...prev.goals, ...Object.fromEntries(Object.entries(partial.goals).filter(([, v]) => v)) };
-      if (partial.experience?.length) next.experience = [...prev.experience, ...partial.experience.map((e) => ({ ...e, id: uid() }))];
-      if (partial.education?.length) next.education = [...prev.education, ...partial.education.map((e) => ({ ...e, id: uid() }))];
-      if (partial.skills?.length) next.skills = [...prev.skills, ...partial.skills.map((s) => ({ ...s, id: uid() }))];
-      if (partial.projects?.length) next.projects = [...prev.projects, ...partial.projects.map((p) => ({ ...p, id: uid() }))];
-      if (partial.achievements?.length) next.achievements = [...prev.achievements, ...partial.achievements.map((a) => ({ ...a, id: uid() }))];
-      return next;
-    });
+    updateTree((prev) => mergeImportedTree(prev, partial));
+  };
+
+  const handleConnectLinkedIn = async () => {
+    setLinkedinBusy(true);
+    setLinkedinError('');
+
+    try {
+      const { error } = await linkLinkedInIdentity('/data-tree');
+      if (error) throw error;
+    } catch (error: any) {
+      setLinkedinError(error.message || 'Unable to connect LinkedIn right now.');
+    } finally {
+      setLinkedinBusy(false);
+    }
+  };
+
+  const handleRefreshLinkedIn = async () => {
+    setLinkedinBusy(true);
+    setLinkedinError('');
+
+    try {
+      await refreshLinkedInConnection(true);
+    } catch (error: any) {
+      setLinkedinError(error.message || 'Unable to refresh LinkedIn right now.');
+    } finally {
+      setLinkedinBusy(false);
+    }
   };
 
   if (!loaded) {
@@ -812,13 +1034,22 @@ export default function DataTreePage() {
               <p className="text-gray-400 text-[15px] leading-relaxed max-w-md">
                 Everything BaseStack knows about you. Add data here once — it enriches every site you generate.
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ${tree.linkedinConnection.connected ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}>
+                  <Linkedin className="w-3.5 h-3.5" />
+                  {tree.linkedinConnection.connected ? 'LinkedIn connected officially' : 'Official LinkedIn connection not set up'}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500">
+                  Secure sync: name, headline, photo, email
+                </span>
+              </div>
             </div>
             <button
               onClick={() => setShowLinkedIn(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-black text-white text-sm font-medium hover:bg-gray-800 transition-all shadow-xl shadow-black/10 flex-shrink-0"
             >
               <Linkedin className="w-4 h-4" />
-              Import LinkedIn
+              {tree.linkedinConnection.connected ? 'Manage LinkedIn' : 'Connect LinkedIn'}
             </button>
           </div>
         </motion.div>
@@ -1139,6 +1370,11 @@ export default function DataTreePage() {
           <LinkedInModal
             onClose={() => setShowLinkedIn(false)}
             onApply={applyLinkedIn}
+            connection={tree.linkedinConnection}
+            connectionBusy={linkedinBusy}
+            connectionError={linkedinError}
+            onConnect={handleConnectLinkedIn}
+            onRefresh={handleRefreshLinkedIn}
           />
         )}
       </AnimatePresence>
