@@ -871,14 +871,19 @@ app.post('/api/ai/generate', async (req, res) => {
     const auth = await requireUser(req, res);
     if (!auth) return;
 
-    const { userData, profileTree } = req.body as { userData?: UserData; profileTree?: ProfileTree | null };
+    const { userData, profileTree, generationMode: requestedMode } = req.body as {
+      userData?: UserData;
+      profileTree?: ProfileTree | null;
+      generationMode?: SiteGenerationMode;
+    };
     if (!userData) {
       res.status(400).json({ error: 'Missing userData payload.' });
       return;
     }
 
     const tier = await getSubscriptionTier(auth.supabase, auth.user.id);
-    const generationMode: SiteGenerationMode = tier === 'free' ? 'html' : 'nextjs';
+    const generationMode: SiteGenerationMode =
+      requestedMode === 'nextjs' && tier !== 'free' ? 'nextjs' : 'html';
     const content = await generateWebsiteContent(userData, generationMode, profileTree);
     res.json(content);
   } catch (error) {

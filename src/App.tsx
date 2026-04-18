@@ -10,10 +10,12 @@ import ViewSite from './components/ViewSite';
 import ViewBySlug from './components/ViewBySlug';
 import DataTreePage from './components/DataTreePage';
 import Settings from './components/Settings';
+import GenerationModePicker from './components/GenerationModePicker';
 import { generateWebsiteContent, refineWebsiteContent } from './services/gemini';
 import { UserData, SiteContent, SiteGenerationMode, SiteProjectFile } from './types';
 import { supabase } from './supabaseClient';
 import { loadProfileTree } from './services/profileTreeStore';
+import { normalizeTier, SubscriptionTier } from './lib/plan';
 import { useParams } from 'react-router-dom';
 
 type StoredSiteContent = SiteContent & {
@@ -147,10 +149,48 @@ function GenerateDirectlyFlow() {
   const [isGenerating, setIsGenerating] = useState(true);
   const [isRefining, setIsRefining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedMode, setSelectedMode] = useState<SiteGenerationMode>('html');
+  const [currentTier, setCurrentTier] = useState<SubscriptionTier>('free');
+  const [isCheckingPlan, setIsCheckingPlan] = useState(true);
+  const [hasConfirmedMode, setHasConfirmedMode] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
+    const fetchTier = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not logged in");
+
+        const { data, error } = await supabase
+          .from('user_subscriptions')
+          .select('tier')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        const tier = normalizeTier(data?.tier);
+        setCurrentTier(tier);
+        setSelectedMode('html');
+      } catch (err) {
+        console.error("Failed to load plan details:", err);
+        setCurrentTier('free');
+        setSelectedMode('html');
+      } finally {
+        setIsCheckingPlan(false);
+        setIsGenerating(false);
+      }
+    };
+
+    fetchTier();
+  }, []);
+
+  useEffect(() => {
+    if (!hasConfirmedMode) return;
+
     const generate = async () => {
+      setIsGenerating(true);
+      setError(null);
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not logged in");
@@ -197,7 +237,11 @@ function GenerateDirectlyFlow() {
           photos: profileTree.photos && profileTree.photos.length > 0 ? profileTree.photos : undefined,
         };
 
-        const content = await generateWebsiteContent(basicData, profileTree);
+        const content = await generateWebsiteContent(
+          basicData,
+          profileTree,
+          currentTier === 'free' ? 'html' : selectedMode,
+        );
 
         // Save to database
         const { data: savedPage, error: dbError } = await supabase
@@ -226,7 +270,7 @@ function GenerateDirectlyFlow() {
     };
     
     generate();
-  }, []);
+  }, [currentTier, hasConfirmedMode, selectedMode]);
 
   const handleReset = () => {
     navigate('/dashboard');
@@ -262,7 +306,21 @@ function GenerateDirectlyFlow() {
     }
   };
 
-  if (isGenerating) return <LoadingScreen />;
+  if (isCheckingPlan || isGenerating) return <LoadingScreen />;
+
+  if (!hasConfirmedMode) {
+    return (
+      <GenerationModePicker
+        currentTier={currentTier}
+        selectedMode={currentTier === 'free' ? 'html' : selectedMode}
+        onSelect={setSelectedMode}
+        onContinue={() => {
+          setError(null);
+          setHasConfirmedMode(true);
+        }}
+      />
+    );
+  }
   
   if (siteContent) {
     return (

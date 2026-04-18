@@ -1,4 +1,4 @@
-import { UserData, SiteContent, ProfileTree } from '../types';
+import { UserData, SiteContent, ProfileTree, SiteGenerationMode } from '../types';
 import { sanitizeGeneratedHtml } from './htmlSanitizer';
 import { supabase } from '../supabaseClient';
 
@@ -25,8 +25,12 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return payload as T;
 }
 
-export async function generateWebsiteContent(userData: UserData, profileTree?: ProfileTree | null): Promise<SiteContent> {
-  const siteContent = await postJson<SiteContent>('/api/ai/generate', { userData, profileTree });
+export async function generateWebsiteContent(
+  userData: UserData,
+  profileTree?: ProfileTree | null,
+  generationMode?: SiteGenerationMode,
+): Promise<SiteContent> {
+  const siteContent = await postJson<SiteContent>('/api/ai/generate', { userData, profileTree, generationMode });
   return {
     ...siteContent,
     html: sanitizeGeneratedHtml(siteContent.html),
