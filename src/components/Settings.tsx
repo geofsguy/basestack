@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, CreditCard, ArrowLeft, LogOut, Check, Zap, Building2, Sparkles, ExternalLink, Lock, AlertTriangle, PartyPopper, X } from 'lucide-react';
 import Logo from './Logo';
-import { BillingPlan, createBillingPortalSession, createCheckoutSession, syncBillingStatus } from '../services/billing';
+import { BillingFunctionError, BillingPlan, createBillingPortalSession, createCheckoutSession, syncBillingStatus } from '../services/billing';
 
 // ── Plan definitions ──────────────────────────────────────────────────────────
 const PLANS = {
@@ -107,6 +107,7 @@ export default function Settings() {
   const [billingError, setBillingError] = useState<string | null>(null);
   const [welcomePlan, setWelcomePlan] = useState<'pro' | 'studio' | null>(null);
   const [isRefreshingBilling, setIsRefreshingBilling] = useState(false);
+  const [billingSyncUnavailable, setBillingSyncUnavailable] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -158,11 +159,21 @@ export default function Settings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate('/auth'); return; }
       setUser(user);
-      if (syncBilling) {
+      if (syncBilling && !billingSyncUnavailable) {
         try {
           await syncBillingStatus();
+          setBillingSyncUnavailable(false);
         } catch (syncError) {
-          console.warn('Unable to sync billing status from Stripe.', syncError);
+          if (syncError instanceof BillingFunctionError && (syncError.status === 401 || syncError.status === 404)) {
+            setBillingSyncUnavailable(true);
+            setBillingMessage((currentMessage) =>
+              currentMessage?.includes('Refreshing your subscription details')
+                ? 'Your billing changes are still syncing. If you just canceled in Stripe, your subscription end date will appear as soon as Stripe finishes updating your account.'
+                : currentMessage
+            );
+          } else {
+            console.warn('Unable to sync billing status from Stripe.', syncError);
+          }
         }
       }
       const { data, error } = await supabase.rpc('get_usage');

@@ -203,7 +203,11 @@ function GenerateDirectlyFlow() {
         }
         
         if (!canCreateSite) {
-          throw new Error("You have reached your free site limit (1 site at a time). Please delete an existing site or upgrade to Pro to continue.");
+          const limitTxt = currentTier === 'free' ? '1 site at a time' : currentTier === 'pro' ? '5 sites at a time' : 'site limit';
+          const planName = currentTier === 'free' ? 'Free' : currentTier === 'pro' ? 'Pro' : 'Studio';
+          const upgradeTxt = currentTier === 'free' ? 'upgrade to Pro' : currentTier === 'pro' ? 'upgrade to Studio' : 'upgrade';
+          const actionTxt = currentTier === 'studio' ? 'delete an existing site' : `delete an existing site or ${upgradeTxt}`;
+          throw new Error(`You have reached your ${planName} plan's capacity (${limitTxt}). Please ${actionTxt} to continue.`);
         }
 
         // 2. Check and increment AI usage limits securely

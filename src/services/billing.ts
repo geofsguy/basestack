@@ -1,17 +1,63 @@
-import { supabase } from '../supabaseClient';
+import { FunctionsHttpError } from '@supabase/supabase-js';
+import { supabase as supabaseClient } from '../supabaseClient';
 
 export type BillingPlan = 'pro' | 'studio';
+
+export class BillingFunctionError extends Error {
+  status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = 'BillingFunctionError';
+    this.status = status;
+  }
+}
+
+async function normalizeBillingError(error: unknown) {
+  if (error instanceof FunctionsHttpError) {
+    const response = error.context as Response | undefined;
+    const status = response?.status;
+    let message = `Billing request failed${status ? ` (${status})` : ''}.`;
+
+    if (response) {
+      try {
+        const contentType = response.headers.get('Content-Type') || '';
+        if (contentType.includes('application/json')) {
+          const payload = await response.clone().json();
+          if (typeof payload?.error === 'string' && payload.error.trim()) {
+            message = payload.error;
+          }
+        } else {
+          const text = await response.clone().text();
+          if (text.trim()) {
+            message = text.trim();
+          }
+        }
+      } catch {
+        // Fall back to the generic message above if the response body is unreadable.
+      }
+    }
+
+    return new BillingFunctionError(message, status);
+  }
+
+  if (error instanceof Error) {
+    return new BillingFunctionError(error.message);
+  }
+
+  return new BillingFunctionError('Billing request failed.');
+}
 
 async function invokeBillingFunction<T>(name: string, body: Record<string, unknown> = {}) {
   const {
     data: { session },
-  } = await supabase.auth.getSession();
+  } = await supabaseClient.auth.getSession();
 
   if (!session?.access_token) {
     throw new Error('You must be signed in to manage billing.');
   }
 
-  const { data, error } = await supabase.functions.invoke(name, {
+  const { data, error } = await supabaseClient.functions.invoke(name, {
     body,
     headers: {
       Authorization: `Bearer ${session.access_token}`,
@@ -19,7 +65,7 @@ async function invokeBillingFunction<T>(name: string, body: Record<string, unkno
   });
 
   if (error) {
-    throw new Error(error.message || 'Billing request failed.');
+    throw await normalizeBillingError(error);
   }
 
   if (data?.error) {
