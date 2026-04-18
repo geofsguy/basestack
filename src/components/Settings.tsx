@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, CreditCard, ArrowLeft, LogOut, Check, Zap, Building2, Sparkles, ExternalLink, Lock, AlertTriangle, PartyPopper, X } from 'lucide-react';
 import Logo from './Logo';
-import { BillingPlan, createBillingPortalSession, createCheckoutSession } from '../services/billing';
+import { BillingPlan, createBillingPortalSession, createCheckoutSession, syncBillingStatus } from '../services/billing';
 
 // ── Plan definitions ──────────────────────────────────────────────────────────
 const PLANS = {
@@ -137,7 +137,7 @@ export default function Settings() {
     if (portalState === 'returned') {
       setActiveTab('billing');
       setBillingMessage('Refreshing your subscription details...');
-      void fetchData(true);
+      void fetchData(true, true);
     }
 
     params.delete('checkout');
@@ -148,7 +148,7 @@ export default function Settings() {
     window.history.replaceState({}, '', nextUrl);
   }, []);
 
-  const fetchData = async (silent = false) => {
+  const fetchData = async (silent = false, syncBilling = false) => {
     if (silent) {
       setIsRefreshingBilling(true);
     } else {
@@ -158,6 +158,13 @@ export default function Settings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate('/auth'); return; }
       setUser(user);
+      if (syncBilling) {
+        try {
+          await syncBillingStatus();
+        } catch (syncError) {
+          console.warn('Unable to sync billing status from Stripe.', syncError);
+        }
+      }
       const { data, error } = await supabase.rpc('get_usage');
       if (!error) setUsage(data as any);
     } catch (err) {
@@ -200,7 +207,7 @@ export default function Settings() {
     let attempts = 0;
     const intervalId = window.setInterval(async () => {
       attempts += 1;
-      await fetchData(true);
+      await fetchData(true, true);
 
       if (attempts >= 8) {
         setBillingMessage(null);

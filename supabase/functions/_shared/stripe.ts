@@ -127,6 +127,28 @@ async function upsertBillingRow(userId: string, patch: Partial<BillingRow>) {
   if (error) throw error;
 }
 
+async function getLatestSubscriptionForCustomer(customerId: string) {
+  const subscriptions = await getStripe().subscriptions.list({
+    customer: customerId,
+    status: 'all',
+    limit: 10,
+  });
+
+  return subscriptions.data.sort((left, right) => right.created - left.created)[0] ?? null;
+}
+
+async function markBillingRowInactive(userId: string, customerId: string) {
+  await upsertBillingRow(userId, {
+    stripe_customer_id: customerId,
+    stripe_subscription_id: null,
+    stripe_price_id: null,
+    subscription_status: 'inactive',
+    current_period_end: null,
+    cancel_at_period_end: false,
+    tier: 'free',
+  });
+}
+
 export async function ensureStripeCustomer(user: { id: string; email?: string | null }) {
   const existing = await getBillingRowByUserId(user.id);
   if (existing?.stripe_customer_id) {
@@ -188,6 +210,39 @@ export async function syncSubscriptionRecord(subscription: Stripe.Subscription) 
     tier: grantedTier,
     ...(shouldResetUsage ? { message_count: 0 } : {}),
   });
+}
+
+export async function syncBillingRecordForUser(userId: string) {
+  const existing = await getBillingRowByUserId(userId);
+
+  if (!existing?.stripe_customer_id) {
+    return existing;
+  }
+
+  let subscription: Stripe.Subscription | null = null;
+
+  if (existing.stripe_subscription_id) {
+    try {
+      subscription = await getStripe().subscriptions.retrieve(existing.stripe_subscription_id);
+    } catch (error) {
+      const stripeError = error as { statusCode?: number } | null;
+      if (stripeError?.statusCode !== 404) {
+        throw error;
+      }
+    }
+  }
+
+  if (!subscription) {
+    subscription = await getLatestSubscriptionForCustomer(existing.stripe_customer_id);
+  }
+
+  if (!subscription) {
+    await markBillingRowInactive(userId, existing.stripe_customer_id);
+    return getBillingRowByUserId(userId);
+  }
+
+  await syncSubscriptionRecord(subscription);
+  return getBillingRowByUserId(userId);
 }
 
 export async function clearSubscriptionRecord(subscription: Stripe.Subscription) {

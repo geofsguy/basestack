@@ -244,20 +244,34 @@ const DESIGN_QUALITY_RULES = `
 DESIGN DIRECTION:
 - Create a site that feels custom-designed, not templated.
 - Start by inferring a strong visual concept from the user's vibe and profile. Then make every section support that concept.
+- Before writing code, silently decide on:
+  1. the site's creative thesis in one sentence
+  2. a typography system using the available fonts
+  3. a restrained color palette with clear contrast roles
+  4. a section architecture that fits this person's actual story
+  5. one hero moment and one secondary visual motif
 - Use asymmetry, contrast, scale shifts, layered backgrounds, section breaks, and visual rhythm where appropriate.
 - Avoid the generic startup-template pattern of: centered hero, three cards, testimonials, footer, all on white.
+- Avoid producing a page where every section uses the same width, same card treatment, same spacing, and same alignment.
 - Avoid overusing glassmorphism, soft purple gradients, or default SaaS aesthetics unless the user's vibe explicitly calls for them.
 - Make typography do real design work: choose an intentional pairing from the available fonts and vary size, weight, tracking, and case.
 - Use a clear color story with 1 dominant palette, 1 accent, and deliberate neutrals. Colors should feel curated, not random.
 - Include at least one standout visual moment: an oversized headline, editorial composition, immersive hero, timeline, mosaic, bold stat treatment, or dramatic call-to-action.
 - Use motion thoughtfully if you add it: subtle fades, marquees, or floating accents are fine, but avoid distracting gimmicks.
+- When the vibe suggests it, lean into editorial, brutalist, gallery-like, cinematic, tech-forward, or tactile directions instead of default portfolio tropes.
 
 LAYOUT + CONTENT:
 - Build a rich one-page personal website with enough depth to feel complete.
 - Prioritize sections that fit the actual user data. Good options include hero, about, experience timeline, selected work, skills, achievements, social proof, writing/interests, contact, and availability.
+- Use 4-7 meaningful sections, not filler. Each section should earn its place and have a distinct purpose.
+- Make the hero communicate who the person is, what they do, and why they are compelling within a few seconds.
+- Vary layout density across the page. Mix spacious moments with denser information zones so the page has pacing.
 - If data is sparse, lean harder into visual storytelling, strong copy treatment, and a tighter set of sections instead of inventing fake facts.
 - If data is rich, surface concrete details, metrics, tools, and accomplishments rather than generic summaries.
 - Treat projects and experience as editorial content, not plain bullet dumps.
+- Write copy that sounds like a sharp designer-writer, not a resume parser.
+- Avoid empty cliches like "passionate developer", "innovative solutions", "results-driven", or "I love building things" unless the user's data directly supports them with specifics.
+- Use punchy headings, strong subheads, and concrete labels. Prefer specificity over generic section titles when possible.
 - Make mobile layouts feel carefully designed, not just shrunk-down desktop layouts.
 
 IMPLEMENTATION:
@@ -267,7 +281,30 @@ IMPLEMENTATION:
 - Use the available font utilities intentionally instead of defaulting everything to font-sans.
 - Prefer semantic HTML sections and accessible markup.
 - Ensure strong spacing cadence, strong contrast, and readable line lengths.
+- Use decorative treatments only when they strengthen the concept. Ornament should feel intentional, never random.
+- If you use cards, grids, badges, or pills, customize their composition so they do not feel like stock SaaS components.
+- Make interactions and hover states feel polished but restrained.
 - Do not include placeholder lorem ipsum or fabricated companies, awards, links, or metrics.
+`;
+
+const PROMPT_EXECUTION_RULES = `
+CREATIVE EXECUTION:
+- Do not simply "place the data on the page." Curate it into a narrative.
+- Decide what should feel immediate, what should feel discoverable, and what should feel memorable.
+- The site should feel like it was art-directed for this specific person, not for an average user.
+- If the user's background suggests a particular industry or personality, reflect that in tone, structure, and styling without becoming gimmicky.
+
+COPY QUALITY:
+- Use specific language pulled from the user's background, tools, industries, interests, and goals.
+- Convert experience into proof: accomplishments, outcomes, responsibilities, or notable context.
+- Make short text blocks feel quotable and sharp.
+- Keep paragraphs readable and concise; avoid giant walls of text.
+- Do not invent testimonials, clients, employers, publications, awards, statistics, or project results.
+
+RESPONSIVE THINKING:
+- Mobile must preserve the concept, not just stack everything mechanically.
+- Re-compose large editorial layouts into deliberate mobile sequences with strong spacing and hierarchy.
+- Ensure tap targets, text sizes, and line lengths remain comfortable on small screens.
 `;
 
 function replacePhotoPlaceholders(source: string, photos?: string[]) {
@@ -376,6 +413,7 @@ function buildHtmlSitePrompt(userData: UserData, profileContext: string) {
   return `
     You are an elite, award-winning frontend developer and digital art director.
     Your task is to generate a completely unique, visually impressive personal website using raw HTML and Tailwind CSS.
+    Build something that would make a design-conscious user feel "this was made for me."
 
     ${profileContext ? `Extended Profile Data (use this for rich, accurate content):\n${profileContext}\n\n` : ''}
     Form Input:
@@ -399,6 +437,8 @@ function buildHtmlSitePrompt(userData: UserData, profileContext: string) {
 
     ${DESIGN_QUALITY_RULES}
 
+    ${PROMPT_EXECUTION_RULES}
+
     SECURITY REQUIREMENTS:
     1. Do not include any <script>, <iframe>, <object>, <embed>, <form>, or remote code-loading tags.
     2. Do not include inline event handler attributes like onclick.
@@ -413,6 +453,8 @@ function buildHtmlSitePrompt(userData: UserData, profileContext: string) {
     6. The site must be fully responsive and feel intentional on mobile, tablet, and desktop.
     7. Output body HTML only, but it may contain a small <style> block inside the root <div> if needed.
     8. Think like a top-tier portfolio designer, not a generic UI generator.
+    9. The result should feel production-quality and visually differentiated from a typical Tailwind template.
+    10. Do not explain your choices or include notes. Just return the final JSON payload.
   `;
 }
 
@@ -445,6 +487,8 @@ function buildNextJsSitePrompt(userData: UserData, profileContext: string) {
 
     ${DESIGN_QUALITY_RULES}
 
+    ${PROMPT_EXECUTION_RULES}
+
     NEXT.JS REQUIREMENTS:
     1. Return ONLY valid JSON: { "html": "...", "pageTsx": "...", "globalsCss": "..." }.
     2. "html" must be preview HTML body content only, wrapped in a single root <div>.
@@ -456,6 +500,8 @@ function buildNextJsSitePrompt(userData: UserData, profileContext: string) {
     8. Keep the preview HTML and the Next.js page visually aligned in concept, structure, and copy.
     9. Do not fabricate companies, awards, metrics, or links.
     10. Do not include forms, scripts, iframes, embeds, or inline event handlers.
+    11. The React output should still feel highly art-directed, not like a safe starter template.
+    12. Do not include commentary, file labels, or markdown fences in any field.
   `;
 }
 
@@ -574,6 +620,8 @@ async function refineHtmlWebsiteContent(currentHtml: string, refinementPrompt: s
 
     ${DESIGN_QUALITY_RULES}
 
+    ${PROMPT_EXECUTION_RULES}
+
     SECURITY REQUIREMENTS:
     1. Do not include any <script>, <iframe>, <object>, <embed>, <form>, or remote code-loading tags.
     2. Do not include inline event handler attributes like onclick.
@@ -588,6 +636,9 @@ async function refineHtmlWebsiteContent(currentHtml: string, refinementPrompt: s
     - Preserve the strongest existing ideas unless the request clearly asks to replace them.
     - If the request is visual, improve composition, spacing, hierarchy, and typography instead of making a narrow superficial edit.
     - If the request targets one area, do not accidentally flatten the rest of the page into a generic layout.
+    - If the request is vague, interpret it in the most design-forward, high-quality way possible.
+    - Make the requested change feel fully integrated with the site's concept, not pasted on.
+    - Maintain or improve responsiveness while refining.
     - Keep the HTML body-only and fully responsive.
     - Return only valid JSON: { "html": "..." } with the updated body HTML.
   `;
@@ -641,6 +692,8 @@ async function refineNextJsWebsiteContent(siteContent: SiteContent, refinementPr
 
     ${DESIGN_QUALITY_RULES}
 
+    ${PROMPT_EXECUTION_RULES}
+
     User Request: "${refinementPrompt}"
 
     Current Preview HTML (body content only):
@@ -655,6 +708,8 @@ async function refineNextJsWebsiteContent(siteContent: SiteContent, refinementPr
     REFINEMENT RULES:
     - Preserve the strongest existing ideas unless the request clearly asks to replace them.
     - Keep the preview HTML and Next.js outputs visually aligned in concept, structure, and copy.
+    - If the request is vague, interpret it in the highest-quality design direction rather than applying a minimal literal patch.
+    - Integrate the change across layout, typography, color, spacing, and content treatment when appropriate.
     - pageTsx must remain a valid app/page.tsx default export.
     - Do not add third-party imports, client hooks, forms, scripts, iframes, embeds, or inline event handlers.
     - Return ONLY valid JSON: { "html": "...", "pageTsx": "...", "globalsCss": "..." }.
