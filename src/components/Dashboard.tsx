@@ -403,7 +403,7 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="max-w-6xl mx-auto relative z-10">
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* ── Header ── */}
         <header className="flex justify-between items-center mb-12">
           <div className="flex items-center space-x-3">
