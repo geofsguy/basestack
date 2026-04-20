@@ -625,6 +625,7 @@ function PricingCard({
         '3 AI operations / month',
         '1 website',
         'HTML + Tailwind site generation',
+        'Auto-Maintain preview only',
         'BaseStack watermark included',
         'Community-tier access',
       ]
@@ -633,6 +634,7 @@ function PricingCard({
         '50 AI operations / month',
         'Unlimited websites',
         'Advanced portfolio analytics',
+        'Auto-Maintain with all approval modes',
         'Next.js, React, and Tailwind project export',
         'Remove BaseStack watermark',
         'Priority support',
@@ -642,6 +644,7 @@ function PricingCard({
         '20 AI operations / month',
         'Up to 5 websites',
         'Portfolio analytics dashboard',
+        'Auto-Maintain with trigger-based updates',
         'Next.js, React, and Tailwind project export',
         'Remove BaseStack watermark',
         'Email support',

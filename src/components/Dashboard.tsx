@@ -23,13 +23,18 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
+  Bot,
+  WandSparkles,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import PublishModal from './PublishModal';
 import SiteAnalyticsModal from './SiteAnalyticsModal';
+import AutoMaintainModal from './AutoMaintainModal';
 import { fetchSiteAnalytics, fetchSiteAnalyticsOverview } from '../services/analytics';
 import { SubscriptionTier, normalizeTier, isPremiumTier } from '../lib/plan';
-import { SiteAnalytics, SiteAnalyticsOverviewItem } from '../types';
+import { getAutoMaintainModeLabel, summarizeAutoMaintainScopes } from '../lib/autoMaintain';
+import { fetchAutoMaintainSettings } from '../services/autoMaintain';
+import { SiteAnalytics, SiteAnalyticsOverviewItem, SiteAutoMaintainSettings } from '../types';
 
 interface Page {
   id: string;
@@ -113,6 +118,8 @@ export default function Dashboard() {
   const [analyticsTarget, setAnalyticsTarget] = useState<Page | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [autoMaintainByPage, setAutoMaintainByPage] = useState<Record<string, SiteAutoMaintainSettings>>({});
+  const [autoMaintainTarget, setAutoMaintainTarget] = useState<Page | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Page | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -154,11 +161,33 @@ export default function Dashboard() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPages(data || []);
+      const nextPages = data || [];
+      setPages(nextPages);
+      await fetchAutoMaintain(nextPages.map((page) => page.id));
     } catch (err) {
       console.error('Error fetching pages:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAutoMaintain = async (pageIds: string[]) => {
+    if (pageIds.length === 0) {
+      setAutoMaintainByPage({});
+      return;
+    }
+
+    try {
+      const settings = await fetchAutoMaintainSettings(pageIds);
+      setAutoMaintainByPage(
+        settings.reduce<Record<string, SiteAutoMaintainSettings>>((accumulator, setting) => {
+          accumulator[setting.page_id] = setting;
+          return accumulator;
+        }, {}),
+      );
+    } catch (err) {
+      console.error('Error fetching Auto-Maintain settings:', err);
+      setAutoMaintainByPage({});
     }
   };
 
@@ -301,6 +330,11 @@ export default function Dashboard() {
         delete next[deleteTarget.id];
         return next;
       });
+      setAutoMaintainByPage((prev) => {
+        const next = { ...prev };
+        delete next[deleteTarget.id];
+        return next;
+      });
       setDeleteTarget(null);
       setDeleteConfirmation('');
       setDeleteError(null);
@@ -316,6 +350,10 @@ export default function Dashboard() {
   const liveSites = pages.filter(p => p.published_at).length;
   const draftSites = pages.length - liveSites;
   const hasPremiumAnalytics = isPremiumTier(currentTier);
+  const hasPremiumAutoMaintain = isPremiumTier(currentTier);
+  const enabledAutoMaintainCount = (Object.values(autoMaintainByPage) as SiteAutoMaintainSettings[])
+    .filter((settings) => settings.enabled)
+    .length;
   const analyticsOverviewItems = Object.values(analyticsOverview) as SiteAnalyticsOverviewItem[];
   const totalTrackedViews = analyticsOverviewItems.reduce((sum, item) => sum + item.total_views, 0);
   const deleteTargetName = deleteTarget ? getPageDisplayName(deleteTarget) : '';
@@ -474,151 +512,222 @@ export default function Dashboard() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {pages.map((page, i) => (
-                  <div
-                    key={page.id}
-                    className="relative bg-white/70 backdrop-blur-xl border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.06)] hover:border-gray-200/60 hover:-translate-y-1.5 transition-all duration-500 group flex flex-col h-full animate-in fade-in zoom-in-95 fill-mode-both"
-                    style={{ animationDelay: `${i * 100 + 100}ms`, animationDuration: '500ms' }}
-                  >
-                    {/* Subtle internal gradient effect for a slightly more premium feel */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
-                    <div className="p-8 flex-1 relative z-10">
-                      <div className="flex items-start justify-between mb-6">
-                        <div className="w-12 h-12 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl flex items-center justify-center shadow-sm border border-white/60">
-                          <LayoutTemplate className="w-5 h-5 text-gray-600" />
-                        </div>
-                        {page.published_at ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-black text-white">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white mr-1.5 animate-pulse opacity-80" />
-                            Live
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-400 border border-gray-100">
-                            Draft
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-lg font-semibold tracking-tight text-gray-900 mb-2">
-                        {getPageDisplayName(page)}
-                      </h3>
-                      <div className="mb-4 flex flex-wrap items-center gap-2">
-                        <p className="text-[13px] font-medium text-gray-500">{page.vibe || 'Random Vibe'}</p>
-                        <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                          page.generation_mode === 'nextjs'
-                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-100/50'
-                            : 'bg-gray-50 text-gray-500 border border-gray-200/50'
-                        }`}>
-                          {page.generation_mode === 'nextjs' ? 'Next.js' : 'HTML'}
-                        </span>
-                      </div>
-                      {page.published_at && page.slug && (
-                        <p className="text-[13px] font-mono text-gray-400 truncate mb-1.5 bg-gray-50/50 rounded-lg px-2.5 py-1.5 w-fit border border-gray-100/50">
-                          /s/{page.slug}
-                        </p>
-                      )}
-                      <p className="text-[13px] text-gray-400 font-medium mt-1">
-                        Created {new Date(page.created_at).toLocaleDateString()}
-                      </p>
-                      {page.published_at && (
-                        <div className={`mt-6 rounded-2xl border px-5 py-4 transition-all duration-300 ${
-                          hasPremiumAnalytics
-                            ? 'border-indigo-100/60 bg-gradient-to-br from-indigo-50/80 to-white/50 backdrop-blur-sm shadow-sm'
-                            : 'border-gray-100/80 bg-gray-50/50'
-                        }`}>
-                          {hasPremiumAnalytics ? (
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-indigo-400/80">
-                                  Views
-                                </p>
-                                <p className="mt-1.5 text-2xl font-bold tracking-tight text-indigo-950">
-                                  {analyticsOverview[page.id]?.total_views ?? 0}
-                                </p>
+                  (() => {
+                    const autoMaintainSettings = autoMaintainByPage[page.id] || null;
+                    const autoMaintainEnabled = !!autoMaintainSettings?.enabled;
+
+                    return (
+                      <div
+                        key={page.id}
+                        className="relative bg-white/70 backdrop-blur-xl border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.06)] hover:border-gray-200/60 hover:-translate-y-1.5 transition-all duration-500 group flex flex-col h-full animate-in fade-in zoom-in-95 fill-mode-both"
+                        style={{ animationDelay: `${i * 100 + 100}ms`, animationDuration: '500ms' }}
+                      >
+                        {/* Subtle internal gradient effect for a slightly more premium feel */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+                        <div className="p-8 flex-1 relative z-10">
+                          <div className="flex items-start justify-between mb-6">
+                            <div className="w-12 h-12 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl flex items-center justify-center shadow-sm border border-white/60">
+                              <LayoutTemplate className="w-5 h-5 text-gray-600" />
+                            </div>
+                            {page.published_at ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-black text-white">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white mr-1.5 animate-pulse opacity-80" />
+                                Live
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-400 border border-gray-100">
+                                Draft
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-lg font-semibold tracking-tight text-gray-900 mb-2">
+                            {getPageDisplayName(page)}
+                          </h3>
+                          <div className="mb-4 flex flex-wrap items-center gap-2">
+                            <p className="text-[13px] font-medium text-gray-500">{page.vibe || 'Random Vibe'}</p>
+                            <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                              page.generation_mode === 'nextjs'
+                                ? 'bg-indigo-50 text-indigo-700 border border-indigo-100/50'
+                                : 'bg-gray-50 text-gray-500 border border-gray-200/50'
+                            }`}>
+                              {page.generation_mode === 'nextjs' ? 'Next.js' : 'HTML'}
+                            </span>
+                            {autoMaintainEnabled && (
+                              <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                                <Bot className="mr-1 h-3 w-3" />
+                                Auto-Maintain On
+                              </span>
+                            )}
+                          </div>
+                          {page.published_at && page.slug && (
+                            <p className="text-[13px] font-mono text-gray-400 truncate mb-1.5 bg-gray-50/50 rounded-lg px-2.5 py-1.5 w-fit border border-gray-100/50">
+                              /s/{page.slug}
+                            </p>
+                          )}
+                          <p className="text-[13px] text-gray-400 font-medium mt-1">
+                            Created {new Date(page.created_at).toLocaleDateString()}
+                          </p>
+
+                          <div className={`mt-6 rounded-2xl border px-5 py-4 transition-all duration-300 ${
+                            hasPremiumAutoMaintain
+                              ? autoMaintainEnabled
+                                ? 'border-emerald-100 bg-gradient-to-br from-emerald-50/90 to-white'
+                                : 'border-gray-100/80 bg-gray-50/50'
+                              : 'border-amber-100 bg-amber-50/80'
+                          }`}>
+                            <div className="flex items-start gap-3">
+                              <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] ${
+                                hasPremiumAutoMaintain
+                                  ? autoMaintainEnabled
+                                    ? 'border-emerald-100 bg-white text-emerald-600'
+                                    : 'border-gray-100/80 bg-white text-gray-400'
+                                  : 'border-amber-200 bg-white text-amber-600'
+                              }`}>
+                                {hasPremiumAutoMaintain ? <Bot className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
                               </div>
-                              <div>
-                                <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-indigo-400/80">
-                                  Visitors
-                                </p>
-                                <p className="mt-1.5 text-2xl font-bold tracking-tight text-indigo-950">
-                                  {analyticsOverview[page.id]?.unique_visitors ?? 0}
-                                </p>
+                              <div className="min-w-0">
+                                <p className="text-[13px] font-semibold text-gray-700">Auto-Maintain</p>
+                                {hasPremiumAutoMaintain ? (
+                                  autoMaintainEnabled ? (
+                                    <>
+                                      <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                                        {getAutoMaintainModeLabel(autoMaintainSettings.maintenance_mode)} •{' '}
+                                        {summarizeAutoMaintainScopes(autoMaintainSettings.allowed_scopes)}
+                                      </p>
+                                      <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-emerald-600">
+                                        Trigger-based updates active
+                                      </p>
+                                    </>
+                                  ) : (
+                                    <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                                      Off for now. Turn it on to let AI watch approved sections and refresh them when meaningful triggers happen.
+                                    </p>
+                                  )
+                                ) : (
+                                  <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                                    Paid plans can enable trigger-based AI maintenance with approval controls.
+                                  </p>
+                                )}
                               </div>
                             </div>
-                          ) : (
-                            <div className="flex items-start gap-3">
-                              <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-white border border-gray-100/80 text-gray-400 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)]">
-                                <Lock className="h-3.5 w-3.5" />
-                              </div>
-                              <div>
-                                <p className="text-[13px] font-semibold text-gray-700">Premium analytics</p>
-                                <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                                  Upgrade to Pro or Studio to see traffic, visitors, and referrers.
-                                </p>
-                              </div>
+                          </div>
+
+                          {page.published_at && (
+                            <div className={`mt-4 rounded-2xl border px-5 py-4 transition-all duration-300 ${
+                              hasPremiumAnalytics
+                                ? 'border-indigo-100/60 bg-gradient-to-br from-indigo-50/80 to-white/50 backdrop-blur-sm shadow-sm'
+                                : 'border-gray-100/80 bg-gray-50/50'
+                            }`}>
+                              {hasPremiumAnalytics ? (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-indigo-400/80">
+                                      Views
+                                    </p>
+                                    <p className="mt-1.5 text-2xl font-bold tracking-tight text-indigo-950">
+                                      {analyticsOverview[page.id]?.total_views ?? 0}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-indigo-400/80">
+                                      Visitors
+                                    </p>
+                                    <p className="mt-1.5 text-2xl font-bold tracking-tight text-indigo-950">
+                                      {analyticsOverview[page.id]?.unique_visitors ?? 0}
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-start gap-3">
+                                  <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-white border border-gray-100/80 text-gray-400 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)]">
+                                    <Lock className="h-3.5 w-3.5" />
+                                  </div>
+                                  <div>
+                                    <p className="text-[13px] font-semibold text-gray-700">Premium analytics</p>
+                                    <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                                      Upgrade to Pro or Studio to see traffic, visitors, and referrers.
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
-                      )}
-                    </div>
-                    <div className="px-8 py-5 border-t border-gray-100 flex flex-wrap items-center justify-between gap-y-4 gap-x-2 relative z-10 bg-white/30 backdrop-blur-sm">
-                      <div className="flex items-center gap-4 flex-wrap flex-1">
-                        {page.published_at && page.slug ? (
-                          <a
-                            href={`/s/${page.slug}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center text-[13px] font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                          >
-                            <Globe className="w-4 h-4 mr-1.5 opacity-70" />
-                            View
-                          </a>
-                        ) : (
-                          <a
-                            href={`/view/${page.id}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center text-[13px] font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                          >
-                            Preview
-                            <LinkIcon className="w-3.5 h-3.5 ml-1.5 opacity-70" />
-                          </a>
-                        )}
-                        {page.published_at && (
+                        <div className="px-8 py-5 border-t border-gray-100 flex flex-wrap items-center justify-between gap-y-4 gap-x-2 relative z-10 bg-white/30 backdrop-blur-sm">
+                          <div className="flex items-center gap-4 flex-wrap flex-1">
+                            {page.published_at && page.slug ? (
+                              <a
+                                href={`/s/${page.slug}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center text-[13px] font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                              >
+                                <Globe className="w-4 h-4 mr-1.5 opacity-70" />
+                                View
+                              </a>
+                            ) : (
+                              <a
+                                href={`/view/${page.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center text-[13px] font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                              >
+                                Preview
+                                <LinkIcon className="w-3.5 h-3.5 ml-1.5 opacity-70" />
+                              </a>
+                            )}
+                            {page.published_at && (
+                              <button
+                                onClick={() => openAnalytics(page)}
+                                className={`flex items-center text-[13px] font-medium transition-colors ${
+                                  hasPremiumAnalytics
+                                    ? 'text-indigo-600 hover:text-indigo-700'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                              >
+                                <BarChart3 className="w-4 h-4 mr-1.5 opacity-70" />
+                                Analytics
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setAutoMaintainTarget(page)}
+                              className={`flex items-center text-[13px] font-medium transition-colors ${
+                                hasPremiumAutoMaintain
+                                  ? autoMaintainEnabled
+                                    ? 'text-emerald-600 hover:text-emerald-700'
+                                    : 'text-gray-600 hover:text-gray-900'
+                                  : 'text-amber-600 hover:text-amber-700'
+                              }`}
+                            >
+                              <WandSparkles className="w-4 h-4 mr-1.5 opacity-70" />
+                              Auto-Maintain
+                            </button>
+                            <Link
+                              to={`/edit/${page.id}`}
+                              className="flex items-center text-[13px] font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+                            >
+                              <Sparkles className="w-4 h-4 mr-1.5 opacity-70" />
+                              Edit with AI
+                            </Link>
+                            <button
+                              onClick={() => openDeleteModal(page)}
+                              className="flex items-center text-[13px] font-medium text-red-500 hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4 mr-1.5 opacity-70" />
+                              Delete
+                            </button>
+                          </div>
                           <button
-                            onClick={() => openAnalytics(page)}
-                            className={`flex items-center text-[13px] font-medium transition-colors ${
-                              hasPremiumAnalytics
-                                ? 'text-indigo-600 hover:text-indigo-700'
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                            onClick={() => setPublishTarget(page)}
+                            className="flex items-center text-[13px] font-semibold px-4 py-2 rounded-full transition-all bg-black text-white hover:bg-gray-800 shadow-md shadow-black/5 hover:shadow-black/10 hover:-translate-y-0.5"
                           >
-                            <BarChart3 className="w-4 h-4 mr-1.5 opacity-70" />
-                            Analytics
+                            {page.published_at ? 'Update' : 'Publish'}
                           </button>
-                        )}
-                        <Link
-                          to={`/edit/${page.id}`}
-                          className="flex items-center text-[13px] font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
-                        >
-                          <Sparkles className="w-4 h-4 mr-1.5 opacity-70" />
-                          Edit with AI
-                        </Link>
-                        <button
-                          onClick={() => openDeleteModal(page)}
-                          className="flex items-center text-[13px] font-medium text-red-500 hover:text-red-600 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4 mr-1.5 opacity-70" />
-                          Delete
-                        </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => setPublishTarget(page)}
-                        className="flex items-center text-[13px] font-semibold px-4 py-2 rounded-full transition-all bg-black text-white hover:bg-gray-800 shadow-md shadow-black/5 hover:shadow-black/10 hover:-translate-y-0.5"
-                      >
-                        {page.published_at ? 'Update' : 'Publish'}
-                      </button>
-                    </div>
-                  </div>
+                    );
+                  })()
                 ))}
               </div>
             )}
@@ -816,6 +925,43 @@ export default function Dashboard() {
                   </>
                 )}
               </div>
+
+              <div className={`rounded-2xl border p-5 shadow-sm ${
+                hasPremiumAutoMaintain ? 'border-emerald-100 bg-emerald-50/70' : 'border-amber-100 bg-amber-50/80'
+              }`}>
+                <div className="flex items-center gap-2 mb-3">
+                  {hasPremiumAutoMaintain ? (
+                    <Bot className="w-4 h-4 text-emerald-600" />
+                  ) : (
+                    <Lock className="w-4 h-4 text-amber-600" />
+                  )}
+                  <h3 className="text-sm font-semibold text-gray-900">Auto-Maintain</h3>
+                </div>
+                {hasPremiumAutoMaintain ? (
+                  <>
+                    <p className="text-2xl font-bold tracking-tight text-emerald-950">{enabledAutoMaintainCount}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-emerald-800">
+                      Site{enabledAutoMaintainCount === 1 ? '' : 's'} currently watched for trigger-based AI updates.
+                    </p>
+                    <p className="mt-3 text-xs leading-relaxed text-gray-600">
+                      Turn it on from any site card to approve boundaries, pick a maintenance mode, and let AI react to real changes instead of random edits.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-gray-800">Premium feature</p>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-600">
+                      Paid plans can keep sites fresh automatically with approval modes and trigger-based maintenance rules.
+                    </p>
+                    <button
+                      onClick={() => navigate('/settings')}
+                      className="mt-4 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-gray-800"
+                    >
+                      Unlock Auto-Maintain
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -916,6 +1062,17 @@ export default function Dashboard() {
           setAnalyticsTarget(null);
           setAnalyticsError(null);
           setAnalyticsLoading(false);
+        }}
+        onUpgrade={() => navigate('/settings')}
+      />
+      <AutoMaintainModal
+        open={!!autoMaintainTarget}
+        page={autoMaintainTarget ? { id: autoMaintainTarget.id, title: autoMaintainTarget.title } : null}
+        currentTier={currentTier}
+        initialSettings={autoMaintainTarget ? autoMaintainByPage[autoMaintainTarget.id] || null : null}
+        onClose={() => setAutoMaintainTarget(null)}
+        onSaved={(settings) => {
+          setAutoMaintainByPage((prev) => ({ ...prev, [settings.page_id]: settings }));
         }}
         onUpgrade={() => navigate('/settings')}
       />

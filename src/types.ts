@@ -56,6 +56,40 @@ export interface SiteAnalytics {
   top_referrers: SiteAnalyticsReferrer[];
 }
 
+export type AutoMaintainScope =
+  | 'bio_intro'
+  | 'featured_projects'
+  | 'portfolio_updates'
+  | 'testimonials'
+  | 'blog_news'
+  | 'seo_metadata'
+  | 'design_refresh'
+  | 'call_to_action';
+
+export type AutoMaintainMode = 'suggest_only' | 'smart_approve' | 'fully_automatic';
+
+export interface AutoMaintainTriggerRules {
+  profile_updates: boolean;
+  project_changes: boolean;
+  testimonial_changes: boolean;
+  blog_news_changes: boolean;
+  seo_drift: boolean;
+  design_review_window: boolean;
+}
+
+export interface SiteAutoMaintainSettings {
+  page_id: string;
+  user_id: string;
+  enabled: boolean;
+  allowed_scopes: AutoMaintainScope[];
+  maintenance_mode: AutoMaintainMode;
+  trigger_rules: AutoMaintainTriggerRules;
+  last_evaluated_at: string | null;
+  last_applied_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─── Profile / Data Tree ───────────────────────────────────────────────────
 
 export interface ExperienceEntry {
