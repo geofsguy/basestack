@@ -1,30 +1,31 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  AlertTriangle,
+  BarChart3,
+  CheckCircle2,
+  ChevronRight,
+  Circle,
+  Database,
+  ExternalLink,
+  Eye,
+  FileText,
+  Globe,
+  LayoutDashboard,
+  LayoutTemplate,
+  Loader2,
+  LogOut,
+  Plus,
+  Search,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  TrendingUp,
+  Wand2,
+} from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import Logo from './Logo';
-import {
-  Plus,
-  LayoutTemplate,
-  Link as LinkIcon,
-  LogOut,
-  Globe,
-  Database,
-  Settings,
-  Sparkles,
-  Clock,
-  ChevronRight,
-  Zap,
-  FileText,
-  CheckCircle2,
-  Circle,
-  TrendingUp,
-  BarChart3,
-  Eye,
-  Lock,
-  Trash2,
-  AlertTriangle,
-  Loader2,
-} from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
 import PublishModal from './PublishModal';
 import SiteAnalyticsModal from './SiteAnalyticsModal';
 import { fetchSiteAnalytics, fetchSiteAnalyticsOverview } from '../services/analytics';
@@ -59,46 +60,77 @@ function formatRelativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
+function formatCompactNumber(value: number): string {
+  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+  return String(value);
+}
+
+function getInitials(nameOrEmail: string): string {
+  const value = nameOrEmail.trim();
+  if (!value) return 'BS';
+  const name = value.includes('@') ? value.split('@')[0].replace(/[._-]+/g, ' ') : value;
+  const parts = name.split(' ').filter(Boolean);
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'BS';
+}
+
+function getGenerationLabel(page: Page): string {
+  if (page.generation_mode === 'nextjs') return 'Next.js';
+  if (page.framework) return page.framework;
+  return 'HTML';
+}
+
+function getPageSummary(page: Page): string {
+  return page.vibe?.trim() || 'AI-generated site';
+}
+
+function Sparkline({ value, muted = false }: { value: number; muted?: boolean }) {
+  const seed = Math.max(value, 1);
+  const points = Array.from({ length: 10 }, (_, index) => {
+    const x = index * 12;
+    const wave = Math.sin((index + seed) * 1.35) * 9;
+    const trend = index * 1.2;
+    const y = 34 - wave - trend;
+    return `${x},${Math.max(8, Math.min(42, y))}`;
+  }).join(' ');
+
+  return (
+    <svg viewBox="0 0 108 48" className="h-10 w-28" aria-hidden="true">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={muted ? '#cbd5e1' : '#4f46e5'}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const TIPS: { text: React.ReactNode }[] = [
   {
     text: (
       <>
-        The richer your{' '}
-        <Link to="/data-tree" className="underline underline-offset-2 font-medium hover:text-indigo-800">
+        A richer{' '}
+        <Link to="/data-tree" className="font-semibold text-indigo-700 hover:text-indigo-900">
           Data Tree
-        </Link>
-        , the more personalised and impressive your AI-generated sites will be.
-      </>
-    ),
-  },
-  {
-    text: 'After publishing, share your live link on LinkedIn or Twitter — a polished personal site makes a strong first impression.',
-  },
-  {
-    text: (
-      <>
-        Use the{' '}
-        <Link to="/data-tree" className="underline underline-offset-2 font-medium hover:text-indigo-800">
-          Goals section
         </Link>{' '}
-        in your Data Tree to let the AI know what opportunities you\'re open to.
+        gives the generator better material for sharper sites.
       </>
     ),
   },
   {
-    text: 'Try different vibes when creating a site — the same info can become a minimal portfolio, a bold landing page, or a creative showcase.',
+    text: 'After publishing, share your live link anywhere you want people to see your work.',
   },
   {
-    text: (
-      <>
-        After generating, click{' '}
-        <span className="font-medium text-indigo-700">Edit with AI</span>{' '}
-        on any site card to refine the design or content with a quick chat.
-      </>
-    ),
+    text: 'Use Edit with AI when a site is close, but needs a clearer layout, tone, or section.',
   },
   {
-    text: 'Keep your experience and projects up to date — new entries unlock richer, more accurate AI generations every time.',
+    text: 'Keep your projects and experience current so future generations feel specific and useful.',
   },
 ];
 
@@ -119,6 +151,9 @@ export default function Dashboard() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [tipIndex, setTipIndex] = useState(0);
   const [tipVisible, setTipVisible] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [userDisplayName, setUserDisplayName] = useState('Account');
+  const [userEmail, setUserEmail] = useState('');
   const tipTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigate = useNavigate();
 
@@ -126,21 +161,34 @@ export default function Dashboard() {
     fetchPages();
     checkDataTree();
     fetchPlanData();
+    fetchAccount();
   }, []);
 
-  // Rotate tips every 5 s with a fade-out / fade-in
   useEffect(() => {
     tipTimerRef.current = setInterval(() => {
       setTipVisible(false);
       setTimeout(() => {
-        setTipIndex(i => (i + 1) % TIPS.length);
+        setTipIndex((i) => (i + 1) % TIPS.length);
         setTipVisible(true);
-      }, 350); // half of the CSS transition duration
+      }, 350);
     }, 5000);
     return () => {
       if (tipTimerRef.current) clearInterval(tipTimerRef.current);
     };
   }, []);
+
+  const fetchAccount = async () => {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const user = data.user;
+      if (!user) return;
+      const metadataName = user.user_metadata?.full_name || user.user_metadata?.name;
+      setUserDisplayName(metadataName || user.email || 'Account');
+      setUserEmail(user.email || '');
+    } catch (err) {
+      console.error('Error fetching account:', err);
+    }
+  };
 
   const fetchPages = async () => {
     try {
@@ -154,8 +202,7 @@ export default function Dashboard() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      const nextPages = data || [];
-      setPages(nextPages);
+      setPages(data || []);
     } catch (err) {
       console.error('Error fetching pages:', err);
     } finally {
@@ -174,7 +221,7 @@ export default function Dashboard() {
         .maybeSingle();
       setHasDataTree(!!data);
     } catch {
-      // silently ignore
+      // Best effort only.
     }
   };
 
@@ -205,10 +252,8 @@ export default function Dashboard() {
   };
 
   const handlePublished = (pageId: string, slug: string, publishedAt: string) => {
-    setPages(prev =>
-      prev.map(p =>
-        p.id === pageId ? { ...p, slug, published_at: publishedAt } : p
-      )
+    setPages((prev) =>
+      prev.map((p) => (p.id === pageId ? { ...p, slug, published_at: publishedAt } : p)),
     );
     void fetchPlanData();
     setPublishTarget(null);
@@ -314,524 +359,627 @@ export default function Dashboard() {
     }
   };
 
-  const liveSites = pages.filter(p => p.published_at).length;
+  const liveSites = pages.filter((p) => p.published_at).length;
   const draftSites = pages.length - liveSites;
   const hasPremiumAnalytics = isPremiumTier(currentTier);
   const analyticsOverviewItems = Object.values(analyticsOverview) as SiteAnalyticsOverviewItem[];
   const totalTrackedViews = analyticsOverviewItems.reduce((sum, item) => sum + item.total_views, 0);
+  const totalUniqueVisitors = analyticsOverviewItems.reduce((sum, item) => sum + item.unique_visitors, 0);
+  const viewsLastSevenDays = analyticsOverviewItems.reduce((sum, item) => sum + item.views_last_7_days, 0);
   const deleteTargetName = deleteTarget ? getPageDisplayName(deleteTarget) : '';
   const deleteMatches = deleteConfirmation.trim() === deleteTargetName;
-  const dashboardStats = [
-    { label: 'Total Sites', value: pages.length, icon: LayoutTemplate, color: 'text-gray-900' },
-    { label: 'Live', value: liveSites, icon: Globe, color: 'text-emerald-600' },
-    { label: 'Drafts', value: draftSites, icon: FileText, color: 'text-amber-500' },
-    ...(hasPremiumAnalytics
-      ? [{ label: 'Views', value: totalTrackedViews, icon: Eye, color: 'text-indigo-600' }]
-      : []),
-  ];
+  const publishedPages = pages.filter((page) => page.published_at);
+  const latestPublishedPage = publishedPages[0];
+  const filteredPages = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return pages;
+    return pages.filter((page) => {
+      const haystack = [
+        getPageDisplayName(page),
+        getPageSummary(page),
+        page.slug || '',
+        getGenerationLabel(page),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [pages, searchQuery]);
 
-  // Checklist steps
   const steps = [
     {
       label: 'Fill in your Data Tree',
       done: hasDataTree,
       href: '/data-tree',
-      desc: 'Add your info so AI can generate richer sites',
+      desc: 'Add the details AI uses to generate richer sites',
     },
     {
       label: 'Create your first site',
       done: pages.length > 0,
       href: '/create',
-      desc: 'Generate a personal site with AI in seconds',
+      desc: 'Start from a guided profile flow',
     },
     {
       label: 'Publish a site live',
       done: liveSites > 0,
       href: pages.length > 0 ? undefined : '/create',
-      desc: 'Share your site with the world via a public link',
+      desc: 'Turn a draft into a shareable public link',
     },
   ];
-  const allDone = steps.every(s => s.done);
+  const allDone = steps.every((s) => s.done);
+  const deploymentStatus = liveSites > 0 ? 'Sites live and shareable' : 'No published sites yet';
+  const successRate = pages.length > 0 ? Math.round((liveSites / pages.length) * 100) : 0;
+  const accountLabel = userEmail || userDisplayName;
+
+  const dashboardStats = [
+    {
+      label: 'Total Sites',
+      value: pages.length,
+      delta: pages.length > 0 ? `${pages.length} project${pages.length === 1 ? '' : 's'}` : 'Ready to create',
+      icon: LayoutTemplate,
+      shell: 'bg-indigo-50 text-indigo-600',
+    },
+    {
+      label: 'Live Sites',
+      value: liveSites,
+      delta: liveSites > 0 ? 'Published now' : 'Publish a draft',
+      icon: Globe,
+      shell: 'bg-emerald-50 text-emerald-600',
+    },
+    {
+      label: 'Drafts',
+      value: draftSites,
+      delta: draftSites > 0 ? 'Work in progress' : 'All caught up',
+      icon: FileText,
+      shell: 'bg-amber-50 text-amber-600',
+    },
+    {
+      label: 'Views',
+      value: hasPremiumAnalytics ? formatCompactNumber(totalTrackedViews) : '-',
+      delta: hasPremiumAnalytics ? `${formatCompactNumber(viewsLastSevenDays)} this week` : 'Premium analytics',
+      icon: Eye,
+      shell: 'bg-violet-50 text-violet-600',
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc] p-6 lg:p-12 relative overflow-hidden font-sans">
-      {/* Background Grid */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'radial-gradient(#000 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-          }}
-        />
-      </div>
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* ── Header ── */}
-        <header className="flex justify-between items-center mb-12">
-          <div className="flex items-center space-x-3">
-            <Logo className="w-8 h-8 text-black" />
-            <span className="font-bold text-xl tracking-tight">BaseStack</span>
+    <div className="min-h-screen bg-[#f8f9fc] font-sans text-slate-950">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-[244px] shrink-0 border-r border-slate-200/80 bg-white xl:flex xl:flex-col">
+          <div className="flex h-[72px] items-center gap-3 border-b border-slate-200/80 px-7">
+            <Logo className="h-8 w-8 text-indigo-600" />
+            <span className="text-xl font-semibold tracking-tight">BaseStack</span>
           </div>
-          <div className="flex items-center gap-4">
-            <Link
-              to="/data-tree"
-              className="flex items-center text-sm font-medium text-gray-500 hover:text-black transition-colors"
-            >
-              <Database className="w-4 h-4 mr-1.5" />
-              Data Tree
-            </Link>
-            <Link
-              to="/settings"
-              className="flex items-center text-sm font-medium text-gray-500 hover:text-black transition-colors"
-            >
-              <Settings className="w-4 h-4 mr-1.5" />
-              Settings
-            </Link>
-            <span className="text-gray-200">|</span>
-            <button
-              onClick={handleSignOut}
-              className="flex items-center text-sm font-medium text-gray-500 hover:text-black transition-colors"
-            >
-              <LogOut className="w-4 h-4 mr-1.5" />
-              Sign Out
-            </button>
-          </div>
-        </header>
 
-        {/* ── Stats Bar ── */}
-        {!loading && (
-          <div className={`grid gap-4 mb-8 ${hasPremiumAnalytics ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3'}`}>
-            {dashboardStats.map(({ label, value, icon: Icon, color }, i) => (
-              <div
-                key={label}
-                className="bg-white/80 backdrop-blur-md border border-gray-100 rounded-2xl px-6 py-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-8 fill-mode-both"
-                style={{ animationDelay: `${i * 100}ms`, animationDuration: '600ms' }}
+          <nav className="flex-1 px-4 py-5">
+            <p className="px-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Main</p>
+            <div className="mt-3 space-y-1">
+              <Link
+                to="/dashboard"
+                className="flex h-10 items-center gap-3 rounded-lg bg-indigo-50 px-4 text-sm font-semibold text-indigo-600"
               >
-                <div className="w-10 h-10 bg-gray-50/80 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Icon className={`w-5 h-5 ${color}`} />
-                </div>
-                <div>
-                  <p className={`text-2xl font-bold tracking-tight ${color}`}>{value}</p>
-                  <p className="text-xs text-gray-400 font-medium mt-0.5">{label}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* ── Page Title + CTA ── */}
-        <div className="flex justify-between items-end mb-8">
-          <div>
-            <h1 className="text-3xl font-medium tracking-tight text-gray-900 mb-2">Your Sites</h1>
-            <p className="text-gray-400 text-[15px]">
-              Manage your sites.{' '}
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </Link>
               <Link
                 to="/data-tree"
-                className="text-gray-700 underline underline-offset-2 hover:text-black"
+                className="flex h-10 items-center gap-3 rounded-lg px-4 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-950"
               >
-                Edit your Data Tree
-              </Link>{' '}
-              to enrich future generations.
-            </p>
-          </div>
-          <Link
-            to="/create"
-            className="flex items-center px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 hover:scale-105 hover:shadow-lg transition-all group"
-          >
-            <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-            Create New Site
-          </Link>
-        </div>
+                <Database className="h-4 w-4" />
+                Data Tree
+              </Link>
+              <button
+                onClick={() => document.getElementById('site-performance')?.scrollIntoView({ behavior: 'smooth' })}
+                className="flex h-10 w-full items-center gap-3 rounded-lg px-4 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-950"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Analytics
+              </button>
+            </div>
 
-        {/* ── Main content area ── */}
-        <div className={`flex gap-8 ${pages.length > 0 || loading ? 'items-start' : ''}`}>
-          {/* ── Site grid / empty state ── */}
-          <div className="flex-1 min-w-0">
-            {loading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black" />
+            <p className="mt-8 px-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Account</p>
+            <div className="mt-3 space-y-1">
+              <Link
+                to="/settings"
+                className="flex h-10 items-center gap-3 rounded-lg px-4 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-950"
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="flex h-10 w-full items-center gap-3 rounded-lg px-4 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-950"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            </div>
+          </nav>
+
+          <div className="m-4 rounded-lg border border-indigo-100 bg-indigo-50/70 p-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-sm">
+                <Sparkles className="h-4 w-4" />
               </div>
-            ) : pages.length === 0 ? (
-              <div className="bg-white/80 backdrop-blur-md border border-gray-100 rounded-3xl p-12 text-center shadow-sm animate-in fade-in slide-in-from-bottom-8 duration-700">
-                <div className="relative w-20 h-20 mx-auto mb-6 group cursor-default">
-                  <div className="absolute inset-0 bg-indigo-100 rounded-2xl rotate-6 animate-pulse" style={{ animationDuration: '3s' }} />
-                  <div className="absolute inset-0 bg-white border border-gray-200 rounded-2xl flex items-center justify-center shadow-md transform -rotate-3 transition-transform group-hover:rotate-0">
-                    <LayoutTemplate className="w-8 h-8 text-indigo-500" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">No sites yet</h3>
-                <p className="text-gray-500 mb-8 max-w-sm mx-auto">
-                  You haven't generated any sites yet. Click the button below to create your first personal website.
-                </p>
-                <Link
-                  to="/create"
-                  className="inline-flex items-center px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 hover:scale-105 transition-all shadow-md group"
-                >
-                  <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                  Create your first site
-                </Link>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">{currentTier === 'free' ? 'Free Plan' : `${currentTier[0].toUpperCase()}${currentTier.slice(1)} Plan`}</p>
+                <p className="text-xs text-slate-500">{hasPremiumAnalytics ? 'Analytics enabled' : 'Basic workspace'}</p>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {pages.map((page, i) => (
-                      <div
-                        key={page.id}
-                        className="relative bg-white/70 backdrop-blur-xl border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.06)] hover:border-gray-200/60 hover:-translate-y-1.5 transition-all duration-500 group flex flex-col h-full animate-in fade-in zoom-in-95 fill-mode-both"
-                        style={{ animationDelay: `${i * 100 + 100}ms`, animationDuration: '500ms' }}
-                      >
-                        {/* Subtle internal gradient effect for a slightly more premium feel */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
-                        <div className="p-8 flex-1 relative z-10">
-                          <div className="flex items-start justify-between mb-6">
-                            <div className="w-12 h-12 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl flex items-center justify-center shadow-sm border border-white/60">
-                              <LayoutTemplate className="w-5 h-5 text-gray-600" />
-                            </div>
-                            {page.published_at ? (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-black text-white">
-                                <span className="w-1.5 h-1.5 rounded-full bg-white mr-1.5 animate-pulse opacity-80" />
-                                Live
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-400 border border-gray-100">
-                                Draft
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="text-lg font-semibold tracking-tight text-gray-900 mb-2">
-                            {getPageDisplayName(page)}
-                          </h3>
-                          <div className="mb-4 flex flex-wrap items-center gap-2">
-                            <p className="text-[13px] font-medium text-gray-500">{page.vibe || 'Random Vibe'}</p>
-                            <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                              page.generation_mode === 'nextjs'
-                                ? 'bg-indigo-50 text-indigo-700 border border-indigo-100/50'
-                                : 'bg-gray-50 text-gray-500 border border-gray-200/50'
-                            }`}>
-                              {page.generation_mode === 'nextjs' ? 'Next.js' : 'HTML'}
-                            </span>
-                          </div>
-                          {page.published_at && page.slug && (
-                            <p className="text-[13px] font-mono text-gray-400 truncate mb-1.5 bg-gray-50/50 rounded-lg px-2.5 py-1.5 w-fit border border-gray-100/50">
-                              /s/{page.slug}
-                            </p>
-                          )}
-                          <p className="text-[13px] text-gray-400 font-medium mt-1">
-                            Created {new Date(page.created_at).toLocaleDateString()}
-                          </p>
-                          {page.published_at && (
-                            <div className={`mt-4 rounded-2xl border px-5 py-4 transition-all duration-300 ${
-                              hasPremiumAnalytics
-                                ? 'border-indigo-100/60 bg-gradient-to-br from-indigo-50/80 to-white/50 backdrop-blur-sm shadow-sm'
-                                : 'border-gray-100/80 bg-gray-50/50'
-                            }`}>
-                              {hasPremiumAnalytics ? (
-                                <div className="grid grid-cols-3 gap-4">
-                                  <div>
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-indigo-400/80">
-                                      Views
-                                    </p>
-                                    <p className="mt-1.5 text-2xl font-bold tracking-tight text-indigo-950">
-                                      {analyticsOverview[page.id]?.total_views ?? 0}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-indigo-400/80">
-                                      Visitors
-                                    </p>
-                                    <p className="mt-1.5 text-2xl font-bold tracking-tight text-indigo-950">
-                                      {analyticsOverview[page.id]?.unique_visitors ?? 0}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-indigo-400/80">
-                                      7 days
-                                    </p>
-                                    <p className="mt-1.5 text-2xl font-bold tracking-tight text-indigo-950">
-                                      {analyticsOverview[page.id]?.views_last_7_days ?? 0}
-                                    </p>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-start gap-3">
-                                  <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-white border border-gray-100/80 text-gray-400 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)]">
-                                    <Lock className="h-3.5 w-3.5" />
-                                  </div>
-                                  <div>
-                                    <p className="text-[13px] font-semibold text-gray-700">Premium analytics</p>
-                                    <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                                      Upgrade to Pro or Studio to see traffic, visitors, campaigns, and devices.
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <div className="px-8 py-5 border-t border-gray-100 flex flex-wrap items-center justify-between gap-y-4 gap-x-2 relative z-10 bg-white/30 backdrop-blur-sm">
-                          <div className="flex items-center gap-4 flex-wrap flex-1">
-                            {page.published_at && page.slug ? (
-                              <a
-                                href={`/s/${page.slug}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center text-[13px] font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                              >
-                                <Globe className="w-4 h-4 mr-1.5 opacity-70" />
-                                View
-                              </a>
-                            ) : (
-                              <a
-                                href={`/view/${page.id}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center text-[13px] font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                              >
-                                Preview
-                                <LinkIcon className="w-3.5 h-3.5 ml-1.5 opacity-70" />
-                              </a>
-                            )}
-                            {page.published_at && (
-                              <button
-                                onClick={() => openAnalytics(page)}
-                                className={`flex items-center text-[13px] font-medium transition-colors ${
-                                  hasPremiumAnalytics
-                                    ? 'text-indigo-600 hover:text-indigo-700'
-                                    : 'text-gray-500 hover:text-gray-700'
-                                }`}
-                              >
-                                <BarChart3 className="w-4 h-4 mr-1.5 opacity-70" />
-                                Analytics
-                              </button>
-                            )}
-                            <Link
-                              to={`/edit/${page.id}`}
-                              className="flex items-center text-[13px] font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
-                            >
-                              <Sparkles className="w-4 h-4 mr-1.5 opacity-70" />
-                              Edit with AI
-                            </Link>
-                            <button
-                              onClick={() => openDeleteModal(page)}
-                              className="flex items-center text-[13px] font-medium text-red-500 hover:text-red-600 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4 mr-1.5 opacity-70" />
-                              Delete
-                            </button>
-                          </div>
-                          <button
-                            onClick={() => setPublishTarget(page)}
-                            className="flex items-center text-[13px] font-semibold px-4 py-2 rounded-full transition-all bg-black text-white hover:bg-gray-800 shadow-md shadow-black/5 hover:shadow-black/10 hover:-translate-y-0.5"
-                          >
-                            {page.published_at ? 'Update' : 'Publish'}
-                          </button>
-                        </div>
-                      </div>
-                ))}
-              </div>
+            </div>
+            {!hasPremiumAnalytics && (
+              <button
+                onClick={() => navigate('/settings')}
+                className="mt-4 h-9 w-full rounded-md border border-indigo-100 bg-white text-xs font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
+              >
+                View Plans
+              </button>
             )}
           </div>
+        </aside>
 
-          {/* ── Right Sidebar ── */}
-          {!loading && (
-            <div className="w-72 flex-shrink-0 space-y-5 animate-in fade-in slide-in-from-right-8 duration-700 fill-mode-both" style={{ animationDelay: '300ms' }}>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-30 flex min-h-[72px] items-center justify-between gap-4 border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur md:px-6 xl:px-10">
+            <div className="flex min-w-0 flex-1 items-center gap-4">
+              <div className="flex items-center gap-3 xl:hidden">
+                <Logo className="h-8 w-8 text-indigo-600" />
+                <span className="hidden text-lg font-semibold tracking-tight sm:inline">BaseStack</span>
+              </div>
+              <div className="relative hidden w-full max-w-[460px] md:block">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search sites, pages, analytics..."
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-11 text-sm font-medium text-slate-700 outline-none transition focus:border-indigo-200 focus:ring-4 focus:ring-indigo-100/70"
+                />
+              </div>
+            </div>
 
-              {/* Getting Started checklist */}
-              {!allDone && (
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Zap className="w-4 h-4 text-amber-500" />
-                    <h3 className="text-sm font-semibold text-gray-900">Getting Started</h3>
-                  </div>
-                  <ol className="space-y-3">
-                    {steps.map((step, i) => (
-                      <li key={i}>
-                        {step.href ? (
-                          <Link to={step.href} className="flex items-start gap-3 group">
-                            {step.done ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                            ) : (
-                              <Circle className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
-                            )}
-                            <div className="min-w-0">
-                              <p
-                                className={`text-xs font-medium leading-tight ${
-                                  step.done
-                                    ? 'text-gray-300 line-through'
-                                    : 'text-gray-700 group-hover:text-black'
-                                }`}
-                              >
-                                {step.label}
-                              </p>
-                              {!step.done && (
-                                <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">
-                                  {step.desc}
-                                </p>
-                              )}
-                            </div>
-                            {!step.done && (
-                              <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-600 mt-0.5 flex-shrink-0 ml-auto" />
-                            )}
-                          </Link>
-                        ) : (
-                          <div className="flex items-start gap-3">
-                            {step.done ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                            ) : (
-                              <Circle className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />
-                            )}
-                            <div className="min-w-0">
-                              <p
-                                className={`text-xs font-medium leading-tight ${
-                                  step.done ? 'text-gray-300 line-through' : 'text-gray-700'
-                                }`}
-                              >
-                                {step.label}
-                              </p>
-                              {!step.done && (
-                                <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">
-                                  {step.desc}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <button
+                onClick={() => navigate('/settings')}
+                className="hidden h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900 sm:flex"
+                aria-label="Settings"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
+              <button
+                onClick={() => navigate('/settings')}
+                className="flex min-w-0 items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-50"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+                  {getInitials(accountLabel)}
                 </div>
-              )}
-
-              {/* All done congratulations card */}
-              {allDone && (
-                <div className="bg-black rounded-2xl p-5 text-white overflow-hidden relative">
-                  <div
-                    className="absolute inset-0 opacity-10"
-                    style={{
-                      backgroundImage:
-                        'radial-gradient(circle at 80% 20%, #fff 0%, transparent 60%)',
-                    }}
-                  />
-                  <TrendingUp className="w-5 h-5 mb-3 opacity-80" />
-                  <h3 className="text-sm font-bold mb-1">You're all set! 🎉</h3>
-                  <p className="text-xs opacity-60 leading-relaxed">
-                    Your site is live. Keep your Data Tree updated to generate even better sites.
-                  </p>
+                <div className="hidden min-w-0 text-left lg:block">
+                  <p className="truncate text-sm font-semibold text-slate-900">{userDisplayName}</p>
+                  <p className="truncate text-xs text-slate-500">{userEmail || 'Manage account'}</p>
                 </div>
-              )}
+                <ChevronRight className="hidden h-4 w-4 rotate-90 text-slate-400 lg:block" />
+              </button>
+            </div>
+          </header>
 
-              {/* Recent activity */}
-              {pages.length > 0 && (
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    <h3 className="text-sm font-semibold text-gray-900">Recent Activity</h3>
+          <main className="flex-1 px-4 py-6 md:px-6 xl:px-10">
+            <div className="mx-auto max-w-[1540px]">
+              <section className="relative overflow-hidden rounded-lg border border-indigo-100 bg-white px-5 py-7 shadow-sm md:px-8">
+                <div className="pointer-events-none absolute right-12 top-1/2 hidden h-36 w-[360px] -translate-y-1/2 lg:block">
+                  <div className="absolute right-0 top-0 h-28 w-44 rotate-3 rounded-lg border border-indigo-100 bg-slate-50 shadow-sm" />
+                  <div className="absolute right-24 top-7 h-24 w-44 -rotate-3 rounded-lg border border-indigo-100 bg-white shadow-sm" />
+                  <div className="absolute right-44 top-12 h-20 w-36 rounded-lg bg-indigo-500/90 shadow-lg shadow-indigo-200" />
+                  <div className="absolute right-52 top-20 h-2 w-20 rounded bg-white/70" />
+                  <div className="absolute right-52 top-28 h-2 w-12 rounded bg-white/50" />
+                  <div className="absolute right-8 top-20 h-3 w-3 rounded-full bg-teal-300" />
+                </div>
+
+                <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <h1 className="text-2xl font-semibold tracking-tight text-slate-950 md:text-3xl">
+                      Welcome back, {userDisplayName === 'Account' ? 'there' : userDisplayName.split(' ')[0]}.
+                    </h1>
+                    <p className="mt-2 max-w-2xl text-sm font-medium text-slate-500">
+                      Here is what is happening with your generated sites today.
+                    </p>
                   </div>
-                  <ol className="space-y-4">
-                    {pages.slice(0, 5).map((page) => (
-                      <li key={page.id} className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-gray-300 mt-1.5 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-gray-700 truncate">
-                            {getPageDisplayName(page)}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span
-                              className={`text-[10px] font-medium ${
-                                page.published_at ? 'text-emerald-500' : 'text-amber-500'
-                              }`}
-                            >
-                              {page.published_at ? 'Live' : 'Draft'}
-                            </span>
-                            <span className="text-[10px] text-gray-300">·</span>
-                            <span className="text-[10px] text-gray-400">
-                              {formatRelativeTime(page.created_at)}
-                            </span>
+                  <Link
+                    to="/create"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm shadow-indigo-200 transition-colors hover:bg-indigo-700"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create New Site
+                  </Link>
+                </div>
+              </section>
+
+              {!loading && (
+                <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {dashboardStats.map(({ label, value, delta, icon: Icon, shell }) => (
+                    <div key={label} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="flex items-center gap-4">
+                        <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${shell}`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500">{label}</p>
+                          <div className="mt-1 flex items-baseline gap-2">
+                            <p className="text-2xl font-semibold tracking-tight text-slate-950">{value}</p>
+                            <p className="text-xs font-semibold text-emerald-600">{delta}</p>
                           </div>
                         </div>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+                      </div>
+                    </div>
+                  ))}
+                </section>
               )}
 
-              {/* Rotating tip card */}
-              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 min-h-[96px]">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-indigo-500" />
-                    <h3 className="text-xs font-semibold text-indigo-700">Pro tip</h3>
-                  </div>
-                  {/* dot indicators */}
-                  <div className="flex items-center gap-1">
-                    {TIPS.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          if (tipTimerRef.current) clearInterval(tipTimerRef.current);
-                          setTipVisible(false);
-                          setTimeout(() => { setTipIndex(i); setTipVisible(true); }, 350);
-                          tipTimerRef.current = setInterval(() => {
-                            setTipVisible(false);
-                            setTimeout(() => {
-                              setTipIndex(idx => (idx + 1) % TIPS.length);
-                              setTipVisible(true);
-                            }, 350);
-                          }, 5000);
-                        }}
-                        className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                          i === tipIndex ? 'bg-indigo-500' : 'bg-indigo-200 hover:bg-indigo-300'
-                        }`}
-                        aria-label={`Tip ${i + 1}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <p
-                  className="text-xs text-indigo-600 leading-relaxed transition-opacity duration-700"
-                  style={{ opacity: tipVisible ? 1 : 0 }}
-                >
-                  {TIPS[tipIndex].text}
-                </p>
-              </div>
+              <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="min-w-0 space-y-5">
+                  <section>
+                    <div className="mb-3 flex items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-lg font-semibold tracking-tight text-slate-950">Your Sites</h2>
+                        <p className="text-sm text-slate-500">
+                          Manage real sites in your workspace: preview, publish, update, analyze, edit, or delete.
+                        </p>
+                      </div>
+                      {pages.length > 0 && (
+                        <Link
+                          to="/create"
+                          className="hidden text-sm font-semibold text-indigo-600 transition-colors hover:text-indigo-800 sm:inline-flex"
+                        >
+                          New site
+                          <ChevronRight className="ml-1 h-4 w-4" />
+                        </Link>
+                      )}
+                    </div>
 
-              <div className={`rounded-2xl border p-5 shadow-sm ${
-                hasPremiumAnalytics ? 'border-indigo-100 bg-indigo-50/70' : 'border-gray-100 bg-white'
-              }`}>
-                <div className="flex items-center gap-2 mb-3">
-                  <BarChart3 className={`w-4 h-4 ${hasPremiumAnalytics ? 'text-indigo-600' : 'text-gray-400'}`} />
-                  <h3 className="text-sm font-semibold text-gray-900">Analytics</h3>
+                    {loading ? (
+                      <div className="flex h-80 items-center justify-center rounded-lg border border-slate-200 bg-white">
+                        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+                      </div>
+                    ) : pages.length === 0 ? (
+                      <div className="rounded-lg border border-slate-200 bg-white px-6 py-14 text-center shadow-sm">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                          <LayoutTemplate className="h-6 w-6" />
+                        </div>
+                        <h3 className="mt-5 text-lg font-semibold text-slate-950">No sites yet</h3>
+                        <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                          Create your first generated site, then publish it here when it is ready to share.
+                        </p>
+                        <Link
+                          to="/create"
+                          className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-indigo-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Create your first site
+                        </Link>
+                      </div>
+                    ) : filteredPages.length === 0 ? (
+                      <div className="rounded-lg border border-slate-200 bg-white px-6 py-12 text-center shadow-sm">
+                        <Search className="mx-auto h-6 w-6 text-slate-400" />
+                        <h3 className="mt-4 text-base font-semibold text-slate-950">No matching sites</h3>
+                        <p className="mt-2 text-sm text-slate-500">Try another search term.</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                        <div className="divide-y divide-slate-200">
+                          {filteredPages.map((page) => {
+                            const name = getPageDisplayName(page);
+                            const views = analyticsOverview[page.id]?.total_views ?? 0;
+                            const isLive = !!page.published_at;
+
+                            return (
+                              <article key={page.id} className="grid gap-4 p-4 transition-colors hover:bg-slate-50/70 lg:grid-cols-[220px_minmax(0,1fr)_140px_128px_420px] lg:items-center">
+                                <div className="h-28 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
+                                  <iframe
+                                    title={`${name} preview`}
+                                    srcDoc={page.html}
+                                    sandbox=""
+                                    scrolling="no"
+                                    className="pointer-events-none h-[280px] w-[550px] origin-top-left scale-[0.4] border-0 bg-white"
+                                  />
+                                </div>
+
+                                <div className="min-w-0">
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <span className={`h-2 w-2 rounded-full ${isLive ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                    <h3 className="truncate text-sm font-semibold text-slate-950">{name}</h3>
+                                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${isLive ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                                      {isLive ? 'Live' : 'Draft'}
+                                    </span>
+                                  </div>
+                                  <p className="mt-2 truncate text-sm text-slate-500">{getPageSummary(page)}</p>
+                                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    {page.slug && (
+                                      <a
+                                        href={`/s/${page.slug}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                                      >
+                                        /s/{page.slug}
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                      </a>
+                                    )}
+                                    <span className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600">
+                                      {getGenerationLabel(page)}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs font-medium text-slate-400">Views</p>
+                                  <p className="mt-1 text-lg font-semibold text-slate-950">
+                                    {hasPremiumAnalytics && isLive ? formatCompactNumber(views) : '-'}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <p className="text-xs font-medium text-slate-400">Updated</p>
+                                  <p className="mt-1 text-sm font-semibold text-slate-600">{formatRelativeTime(page.created_at)}</p>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                                  {isLive && (
+                                    <Sparkline value={views} muted={!hasPremiumAnalytics} />
+                                  )}
+                                  <a
+                                    href={isLive && page.slug ? `/s/${page.slug}` : `/view/${page.id}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
+                                  >
+                                    {isLive ? 'View' : 'Preview'}
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </a>
+                                  {isLive && (
+                                    <button
+                                      onClick={() => openAnalytics(page)}
+                                      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
+                                    >
+                                      <BarChart3 className="h-3.5 w-3.5" />
+                                      Analytics
+                                    </button>
+                                  )}
+                                  <Link
+                                    to={`/edit/${page.id}`}
+                                    className="inline-flex h-9 items-center gap-1.5 rounded-md border border-indigo-100 bg-white px-3 text-xs font-semibold text-indigo-600 transition-colors hover:bg-indigo-50"
+                                  >
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                    Edit with AI
+                                  </Link>
+                                  <button
+                                    onClick={() => setPublishTarget(page)}
+                                    className="inline-flex h-9 items-center rounded-md bg-indigo-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-indigo-700"
+                                  >
+                                    {isLive ? 'Update' : 'Publish'}
+                                  </button>
+                                  <button
+                                    onClick={() => openDeleteModal(page)}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                                    aria-label={`Delete ${name}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+
+                  <section id="site-performance" className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="text-base font-semibold text-slate-950">Site Performance Overview</h2>
+                        <p className="text-sm text-slate-500">
+                          {hasPremiumAnalytics ? 'Aggregate analytics from your live sites.' : 'Upgrade to unlock real traffic reporting.'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => hasPremiumAnalytics ? undefined : navigate('/settings')}
+                        className="h-9 rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950"
+                      >
+                        {hasPremiumAnalytics ? 'Last 30 days' : 'View plans'}
+                      </button>
+                    </div>
+
+                    <div className="mt-5 grid gap-2 sm:grid-cols-4">
+                      {[
+                        ['Views', hasPremiumAnalytics ? formatCompactNumber(totalTrackedViews) : '-'],
+                        ['Visitors', hasPremiumAnalytics ? formatCompactNumber(totalUniqueVisitors) : '-'],
+                        ['7 day views', hasPremiumAnalytics ? formatCompactNumber(viewsLastSevenDays) : '-'],
+                        ['Live ratio', pages.length > 0 ? `${successRate}%` : '-'],
+                      ].map(([label, value]) => (
+                        <div key={label} className="rounded-md bg-slate-50 px-3 py-3">
+                          <p className="text-xs font-semibold text-slate-500">{label}</p>
+                          <p className="mt-1 text-sm font-semibold text-slate-950">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-6 h-40 overflow-hidden rounded-md bg-gradient-to-b from-white to-indigo-50/50">
+                      <svg viewBox="0 0 720 160" className="h-full w-full" preserveAspectRatio="none" aria-hidden="true">
+                        {[30, 60, 90, 120].map((y) => (
+                          <line key={y} x1="0" x2="720" y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="6 6" />
+                        ))}
+                        <path
+                          d="M0 114 C 56 100, 78 68, 132 76 S 210 56, 260 72 S 322 122, 380 104 S 442 82, 492 100 S 568 122, 620 92 S 680 108, 720 88"
+                          fill="none"
+                          stroke={hasPremiumAnalytics ? '#4f46e5' : '#cbd5e1'}
+                          strokeWidth="3"
+                        />
+                        <path
+                          d="M0 114 C 56 100, 78 68, 132 76 S 210 56, 260 72 S 322 122, 380 104 S 442 82, 492 100 S 568 122, 620 92 S 680 108, 720 88 L720 160 L0 160 Z"
+                          fill={hasPremiumAnalytics ? '#6366f1' : '#94a3b8'}
+                          opacity="0.12"
+                        />
+                      </svg>
+                    </div>
+                  </section>
                 </div>
-                {hasPremiumAnalytics ? (
-                  <>
-                    <p className="text-2xl font-bold tracking-tight text-indigo-900">{totalTrackedViews}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-indigo-700">
-                      Total recorded views across your live portfolio sites.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm font-medium text-gray-700">Upgrade for traffic insights</p>
-                    <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                      Premium members can see views, visitors, and referral sources for every published site.
-                    </p>
-                    <button
-                      onClick={() => navigate('/settings')}
-                      className="mt-4 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-gray-800"
-                    >
-                      View plans
-                    </button>
-                  </>
+
+                {!loading && (
+                  <aside className="space-y-5">
+                    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                          <ShieldCheck className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h2 className="text-sm font-semibold text-slate-950">Deployment Status</h2>
+                          <p className="mt-1 text-xs font-semibold text-emerald-600">{deploymentStatus}</p>
+                        </div>
+                      </div>
+                      <div className="mt-5 space-y-3 border-t border-slate-100 pt-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500">Last deployment</span>
+                          <span className="font-semibold text-slate-700">
+                            {latestPublishedPage?.published_at ? formatRelativeTime(latestPublishedPage.published_at) : 'None'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-500">Live rate</span>
+                          <span className="font-semibold text-slate-700">{pages.length > 0 ? `${successRate}%` : '-'}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => latestPublishedPage && setPublishTarget(latestPublishedPage)}
+                        disabled={!latestPublishedPage}
+                        className="mt-5 h-10 w-full rounded-md border border-slate-200 bg-white text-sm font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {latestPublishedPage ? 'Update Latest Site' : 'No Deployments'}
+                      </button>
+                    </section>
+
+                    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="mb-4 flex items-center justify-between">
+                        <h2 className="text-sm font-semibold text-slate-950">Recent Activity</h2>
+                        <span className="text-xs font-semibold text-indigo-600">{pages.length} total</span>
+                      </div>
+                      {pages.length > 0 ? (
+                        <ol className="space-y-4">
+                          {pages.slice(0, 4).map((page) => (
+                            <li key={page.id} className="flex items-start gap-3">
+                              <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${page.published_at ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                {page.published_at ? <Globe className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold text-slate-700">{getPageDisplayName(page)}</p>
+                                <p className="mt-0.5 text-xs text-slate-500">
+                                  {page.published_at ? 'Published changes' : 'Draft created'}
+                                </p>
+                              </div>
+                              <span className="text-xs font-medium text-slate-400">{formatRelativeTime(page.created_at)}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      ) : (
+                        <p className="text-sm leading-6 text-slate-500">No activity yet. Your first created site will appear here.</p>
+                      )}
+                    </section>
+
+                    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="mb-4 flex items-center justify-between">
+                        <div>
+                          <h2 className="text-sm font-semibold text-slate-950">Next Steps</h2>
+                          <p className="text-xs text-slate-500">{allDone ? 'Everything essential is set up.' : 'Finish the essentials.'}</p>
+                        </div>
+                        {allDone && <TrendingUp className="h-5 w-5 text-emerald-500" />}
+                      </div>
+                      <ol className="space-y-4">
+                        {steps.map((step) => {
+                          const content = (
+                            <>
+                              {step.done ? (
+                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                              ) : (
+                                <Circle className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className={`text-sm font-semibold ${step.done ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                                  {step.label}
+                                </p>
+                                {!step.done && <p className="mt-0.5 text-xs text-slate-500">{step.desc}</p>}
+                              </div>
+                              {!step.done && step.href && <ChevronRight className="mt-1 h-4 w-4 text-slate-300" />}
+                            </>
+                          );
+
+                          return (
+                            <li key={step.label}>
+                              {step.href && !step.done ? (
+                                <Link to={step.href} className="flex items-start gap-3 rounded-md transition-colors hover:bg-slate-50">
+                                  {content}
+                                </Link>
+                              ) : (
+                                <div className="flex items-start gap-3">{content}</div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </section>
+
+                    <section className="rounded-lg border border-indigo-100 bg-indigo-50/70 p-5 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-indigo-600" />
+                          <h2 className="text-sm font-semibold text-indigo-900">AI Tip</h2>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {TIPS.map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                if (tipTimerRef.current) clearInterval(tipTimerRef.current);
+                                setTipVisible(false);
+                                setTimeout(() => {
+                                  setTipIndex(index);
+                                  setTipVisible(true);
+                                }, 350);
+                              }}
+                              className={`h-1.5 w-1.5 rounded-full transition-colors ${index === tipIndex ? 'bg-indigo-600' : 'bg-indigo-200 hover:bg-indigo-300'}`}
+                              aria-label={`Tip ${index + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p
+                        className="mt-3 min-h-[44px] text-sm leading-6 text-indigo-700 transition-opacity duration-300"
+                        style={{ opacity: tipVisible ? 1 : 0 }}
+                      >
+                        {TIPS[tipIndex].text}
+                      </p>
+                    </section>
+
+                    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                      <h2 className="text-sm font-semibold text-slate-950">Quick Actions</h2>
+                      <div className="mt-4 grid grid-cols-4 gap-3">
+                        {[
+                          { label: 'New Site', icon: LayoutTemplate, href: '/create' },
+                          { label: 'Generate', icon: Wand2, href: '/generate' },
+                          { label: 'Data Tree', icon: Database, href: '/data-tree' },
+                          { label: 'Settings', icon: Settings, href: '/settings' },
+                        ].map(({ label, icon: Icon, href }) => (
+                          <Link key={label} to={href} className="group min-w-0 text-center">
+                            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-600 transition-colors group-hover:bg-indigo-50 group-hover:text-indigo-600">
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <span className="mt-2 block truncate text-[11px] font-semibold text-slate-600">{label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </section>
+                  </aside>
                 )}
               </div>
-
             </div>
-          )}
+          </main>
         </div>
       </div>
 
-      {/* Publish Modal */}
       {publishTarget && (
         <PublishModal
           pageId={publishTarget.id}
@@ -841,32 +989,33 @@ export default function Dashboard() {
           onPublished={({ slug, publishedAt }) => handlePublished(publishTarget.id, slug, publishedAt)}
         />
       )}
+
       {deleteTarget && (
         <div
           className="fixed inset-0 z-[110] flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
           onClick={closeDeleteModal}
         >
           <div
-            className="w-full max-w-md rounded-[2rem] border border-red-100 bg-white p-8 shadow-2xl shadow-black/10"
+            className="w-full max-w-md rounded-lg border border-red-100 bg-white p-8 shadow-2xl shadow-black/10"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-red-50 text-red-600">
               <AlertTriangle className="h-5 w-5" />
             </div>
 
-            <h2 className="text-2xl font-medium tracking-tight text-gray-900">Delete site</h2>
-            <p className="mt-2 text-[15px] leading-relaxed text-gray-500">
-              This permanently deletes <span className="font-semibold text-gray-900">{deleteTargetName}</span>.
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">Delete site</h2>
+            <p className="mt-2 text-[15px] leading-relaxed text-slate-500">
+              This permanently deletes <span className="font-semibold text-slate-950">{deleteTargetName}</span>.
               Type the site name exactly to confirm.
             </p>
 
-            <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">Type this name</p>
-              <p className="mt-1 text-sm font-medium text-gray-900">{deleteTargetName}</p>
+            <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Type this name</p>
+              <p className="mt-1 text-sm font-medium text-slate-950">{deleteTargetName}</p>
             </div>
 
             <div className="mt-5">
-              <label htmlFor="delete-site-confirmation" className="mb-2 block text-sm font-medium text-gray-700">
+              <label htmlFor="delete-site-confirmation" className="mb-2 block text-sm font-medium text-slate-700">
                 Confirm site name
               </label>
               <input
@@ -878,13 +1027,13 @@ export default function Dashboard() {
                   if (deleteError) setDeleteError(null);
                 }}
                 autoFocus
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-[15px] font-medium text-gray-900 outline-none transition-all focus:border-red-300 focus:ring-1 focus:ring-red-500/20"
+                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-[15px] font-medium text-slate-950 outline-none transition-all focus:border-red-300 focus:ring-4 focus:ring-red-100"
                 placeholder={deleteTargetName}
               />
             </div>
 
             {deleteError && (
-              <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">
+              <div className="mt-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-700">
                 {deleteError}
               </div>
             )}
@@ -893,14 +1042,14 @@ export default function Dashboard() {
               <button
                 onClick={closeDeleteModal}
                 disabled={isDeleting}
-                className="rounded-full border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-md border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteSite}
                 disabled={!deleteMatches || isDeleting}
-                className="inline-flex items-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center rounded-md bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {isDeleting ? (
                   <>
@@ -915,6 +1064,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
       <SiteAnalyticsModal
         open={!!analyticsTarget}
         page={analyticsTarget ? { title: analyticsTarget.title, slug: analyticsTarget.slug } : null}
