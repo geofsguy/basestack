@@ -31,6 +31,8 @@ import SiteAnalyticsModal from './SiteAnalyticsModal';
 import { fetchSiteAnalytics, fetchSiteAnalyticsOverview } from '../services/analytics';
 import { SubscriptionTier, normalizeTier, isPremiumTier } from '../lib/plan';
 import { SiteAnalytics, SiteAnalyticsOverviewItem } from '../types';
+import { buildSiteDocument } from '../services/siteDocument';
+import { sanitizeGeneratedHtml } from '../services/htmlSanitizer';
 
 interface Page {
   id: string;
@@ -85,6 +87,10 @@ function getGenerationLabel(page: Page): string {
 
 function getPageSummary(page: Page): string {
   return page.vibe?.trim() || 'AI-generated site';
+}
+
+function getPreviewDocument(page: Page): string {
+  return buildSiteDocument(sanitizeGeneratedHtml(page.html));
 }
 
 function Sparkline({ value, muted = false }: { value: number; muted?: boolean }) {
@@ -672,8 +678,8 @@ export default function Dashboard() {
                                 <div className="h-28 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
                                   <iframe
                                     title={`${name} preview`}
-                                    srcDoc={page.html}
-                                    sandbox=""
+                                    srcDoc={getPreviewDocument(page)}
+                                    sandbox="allow-scripts"
                                     scrolling="no"
                                     className="pointer-events-none h-[280px] w-[550px] origin-top-left scale-[0.4] border-0 bg-white"
                                   />
