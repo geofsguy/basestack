@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import Logo from './Logo';
 import { supabase } from '../supabaseClient';
+import { isPremiumTier } from '../lib/plan';
+
+interface WatermarkProps {
+  pageId?: string | null;
+  slug?: string | null;
+}
 
 /**
  * Unremovable BaseStack watermark badge shown on free-tier sites.
@@ -9,28 +15,43 @@ import { supabase } from '../supabaseClient';
  * Rendered in the React DOM layer OUTSIDE the site iframe — no amount
  * of AI refinement or HTML editing can remove it.
  */
-export default function Watermark() {
+export default function Watermark({ pageId, slug }: WatermarkProps) {
   const [show, setShow] = useState(true); // optimistic: show while loading
 
   useEffect(() => {
-    // Silently check if the current viewer is a paid subscriber.
+    let isMounted = true;
+
+    // Silently check whether the site owner should have the badge removed.
     // If the request fails for any reason, the watermark stays visible.
     (async () => {
       try {
+        if (pageId || slug) {
+          const { data } = await supabase.rpc('should_show_watermark_for_page', {
+            p_page_id: pageId || null,
+            p_slug: slug || null,
+          });
+          if (isMounted && typeof data === 'boolean') {
+            setShow(data);
+          }
+          return;
+        }
+
+        // Fallback for unsaved previews: use the current user's plan.
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return; // not logged in → show watermark
         const { data } = await supabase.rpc('get_usage');
-        if (data && typeof data.tier === 'string') {
-          const tier = data.tier.toLowerCase();
-          if (tier === 'pro' || tier === 'studio') {
-            setShow(false);
-          }
+        if (isMounted && data && typeof data.tier === 'string') {
+          setShow(!isPremiumTier(data.tier));
         }
       } catch {
         // any failure → keep showing the watermark
       }
     })();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [pageId, slug]);
 
   if (!show) return null;
 

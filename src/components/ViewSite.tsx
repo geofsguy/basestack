@@ -84,7 +84,7 @@ export default function ViewSite() {
         title="View Site"
         sandbox="allow-scripts"
       />
-      <Watermark />
+      <Watermark pageId={id} />
     </div>
   );
 }

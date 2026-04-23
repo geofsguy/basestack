@@ -72,6 +72,7 @@ type SiteContent = {
   generationMode: SiteGenerationMode;
   framework: string | null;
   projectFiles?: SiteProjectFile[] | null;
+  responseMessage?: string | null;
 };
 
 function getRequiredEnv(name: string): string {
@@ -640,7 +641,8 @@ async function refineHtmlWebsiteContent(currentHtml: string, refinementPrompt: s
     - Make the requested change feel fully integrated with the site's concept, not pasted on.
     - Maintain or improve responsiveness while refining.
     - Keep the HTML body-only and fully responsive.
-    - Return only valid JSON: { "html": "..." } with the updated body HTML.
+    - Include responseMessage as a short, specific confirmation for the user in 12 words or fewer.
+    - Return only valid JSON: { "html": "...", "responseMessage": "..." } with the updated body HTML.
   `;
 
   const ai = getGenAI();
@@ -656,8 +658,12 @@ async function refineHtmlWebsiteContent(currentHtml: string, refinementPrompt: s
             type: Type.STRING,
             description: 'The updated HTML code.',
           },
+          responseMessage: {
+            type: Type.STRING,
+            description: 'A concise confirmation of what changed.',
+          },
         },
-        required: ['html'],
+        required: ['html', 'responseMessage'],
       },
     },
   });
@@ -665,12 +671,13 @@ async function refineHtmlWebsiteContent(currentHtml: string, refinementPrompt: s
   const text = result.text;
   if (!text) throw new Error('Empty response from Gemini.');
 
-  const parsed = JSON.parse(text) as { html: string };
+  const parsed = JSON.parse(text) as { html: string; responseMessage?: string };
   return {
     html: parsed.html,
     generationMode: 'html',
     framework: null,
     projectFiles: null,
+    responseMessage: parsed.responseMessage || 'Refinement applied.',
   };
 }
 
@@ -712,7 +719,8 @@ async function refineNextJsWebsiteContent(siteContent: SiteContent, refinementPr
     - Integrate the change across layout, typography, color, spacing, and content treatment when appropriate.
     - pageTsx must remain a valid app/page.tsx default export.
     - Do not add third-party imports, client hooks, forms, scripts, iframes, embeds, or inline event handlers.
-    - Return ONLY valid JSON: { "html": "...", "pageTsx": "...", "globalsCss": "..." }.
+    - Include responseMessage as a short, specific confirmation for the user in 12 words or fewer.
+    - Return ONLY valid JSON: { "html": "...", "pageTsx": "...", "globalsCss": "...", "responseMessage": "..." }.
   `;
 
   const ai = getGenAI();
@@ -727,8 +735,9 @@ async function refineNextJsWebsiteContent(siteContent: SiteContent, refinementPr
           html: { type: Type.STRING },
           pageTsx: { type: Type.STRING },
           globalsCss: { type: Type.STRING },
+          responseMessage: { type: Type.STRING },
         },
-        required: ['html', 'pageTsx', 'globalsCss'],
+        required: ['html', 'pageTsx', 'globalsCss', 'responseMessage'],
       },
     },
   });
@@ -736,7 +745,7 @@ async function refineNextJsWebsiteContent(siteContent: SiteContent, refinementPr
   const text = result.text;
   if (!text) throw new Error('Empty response from Gemini.');
 
-  const parsed = JSON.parse(text) as { html: string; pageTsx: string; globalsCss: string };
+  const parsed = JSON.parse(text) as { html: string; pageTsx: string; globalsCss: string; responseMessage?: string };
   const siteTitleMatch = currentLayoutTsx.match(/title:\s*["'`](.+?)["'`]/);
   const siteTitle = siteTitleMatch?.[1] || 'BaseStack Portfolio';
   return {
@@ -744,6 +753,7 @@ async function refineNextJsWebsiteContent(siteContent: SiteContent, refinementPr
     generationMode: 'nextjs',
     framework: 'nextjs',
     projectFiles: buildNextJsProjectFiles(parsed.pageTsx, parsed.globalsCss, siteTitle),
+    responseMessage: parsed.responseMessage || 'Refinement applied.',
   };
 }
 

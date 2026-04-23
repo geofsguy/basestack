@@ -104,9 +104,11 @@ function EditSiteFlow() {
         .eq('id', siteContent.id);
 
       setSiteContent(prev => prev ? { ...prev, ...updatedContent } : null);
+      return updatedContent.responseMessage;
     } catch (err: any) {
       console.error("Failed to refine site:", err);
       setError(err.message || "Failed to refine your website. Please try again.");
+      throw err;
     } finally {
       setIsRefining(false);
     }
@@ -303,8 +305,10 @@ function GenerateDirectlyFlow() {
         project_files: updatedContent.projectFiles ?? null,
       }).eq('id', siteContent.id);
       setSiteContent(prev => prev ? { ...prev, ...updatedContent } : null);
+      return updatedContent.responseMessage;
     } catch (err: any) {
       setError(err.message || "Failed to refine.");
+      throw err;
     } finally {
       setIsRefining(false);
     }

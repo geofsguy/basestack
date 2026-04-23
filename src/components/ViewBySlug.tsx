@@ -9,6 +9,7 @@ import { trackPublishedPageView } from '../services/analytics';
 
 export default function ViewBySlug() {
   const { slug } = useParams<{ slug: string }>();
+  const [pageId, setPageId] = useState<string | null>(null);
   const [html, setHtml] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -20,15 +21,17 @@ export default function ViewBySlug() {
 
   const fetchBySlug = async () => {
     try {
+      setPageId(null);
       const { data, error } = await supabase
         .from('pages')
-        .select('html')
+        .select('id, html')
         .eq('slug', slug)
         .not('published_at', 'is', null)
         .maybeSingle();
 
       if (error) throw error;
       if (!data) { setNotFound(true); return; }
+      setPageId(data.id);
       setHtml(data.html);
       void trackPublishedPageView(slug).catch((trackingError) => {
         console.warn('Analytics tracking failed:', trackingError);
@@ -94,7 +97,7 @@ export default function ViewBySlug() {
         title={`${slug}'s site`}
         sandbox="allow-scripts"
       />
-      <Watermark />
+      <Watermark pageId={pageId} slug={slug} />
     </div>
   );
 }

@@ -23,18 +23,13 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
-  Bot,
-  WandSparkles,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import PublishModal from './PublishModal';
 import SiteAnalyticsModal from './SiteAnalyticsModal';
-import AutoMaintainModal from './AutoMaintainModal';
 import { fetchSiteAnalytics, fetchSiteAnalyticsOverview } from '../services/analytics';
 import { SubscriptionTier, normalizeTier, isPremiumTier } from '../lib/plan';
-import { getAutoMaintainModeLabel, summarizeAutoMaintainScopes } from '../lib/autoMaintain';
-import { fetchAutoMaintainSettings } from '../services/autoMaintain';
-import { SiteAnalytics, SiteAnalyticsOverviewItem, SiteAutoMaintainSettings } from '../types';
+import { SiteAnalytics, SiteAnalyticsOverviewItem } from '../types';
 
 interface Page {
   id: string;
@@ -118,8 +113,6 @@ export default function Dashboard() {
   const [analyticsTarget, setAnalyticsTarget] = useState<Page | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
-  const [autoMaintainByPage, setAutoMaintainByPage] = useState<Record<string, SiteAutoMaintainSettings>>({});
-  const [autoMaintainTarget, setAutoMaintainTarget] = useState<Page | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Page | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -163,31 +156,10 @@ export default function Dashboard() {
       if (error) throw error;
       const nextPages = data || [];
       setPages(nextPages);
-      await fetchAutoMaintain(nextPages.map((page) => page.id));
     } catch (err) {
       console.error('Error fetching pages:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchAutoMaintain = async (pageIds: string[]) => {
-    if (pageIds.length === 0) {
-      setAutoMaintainByPage({});
-      return;
-    }
-
-    try {
-      const settings = await fetchAutoMaintainSettings(pageIds);
-      setAutoMaintainByPage(
-        settings.reduce<Record<string, SiteAutoMaintainSettings>>((accumulator, setting) => {
-          accumulator[setting.page_id] = setting;
-          return accumulator;
-        }, {}),
-      );
-    } catch (err) {
-      console.error('Error fetching Auto-Maintain settings:', err);
-      setAutoMaintainByPage({});
     }
   };
 
@@ -330,11 +302,6 @@ export default function Dashboard() {
         delete next[deleteTarget.id];
         return next;
       });
-      setAutoMaintainByPage((prev) => {
-        const next = { ...prev };
-        delete next[deleteTarget.id];
-        return next;
-      });
       setDeleteTarget(null);
       setDeleteConfirmation('');
       setDeleteError(null);
@@ -350,10 +317,6 @@ export default function Dashboard() {
   const liveSites = pages.filter(p => p.published_at).length;
   const draftSites = pages.length - liveSites;
   const hasPremiumAnalytics = isPremiumTier(currentTier);
-  const hasPremiumAutoMaintain = isPremiumTier(currentTier);
-  const enabledAutoMaintainCount = (Object.values(autoMaintainByPage) as SiteAutoMaintainSettings[])
-    .filter((settings) => settings.enabled)
-    .length;
   const analyticsOverviewItems = Object.values(analyticsOverview) as SiteAnalyticsOverviewItem[];
   const totalTrackedViews = analyticsOverviewItems.reduce((sum, item) => sum + item.total_views, 0);
   const deleteTargetName = deleteTarget ? getPageDisplayName(deleteTarget) : '';
@@ -512,11 +475,6 @@ export default function Dashboard() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {pages.map((page, i) => (
-                  (() => {
-                    const autoMaintainSettings = autoMaintainByPage[page.id] || null;
-                    const autoMaintainEnabled = !!autoMaintainSettings?.enabled;
-
-                    return (
                       <div
                         key={page.id}
                         className="relative bg-white/70 backdrop-blur-xl border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.06)] hover:border-gray-200/60 hover:-translate-y-1.5 transition-all duration-500 group flex flex-col h-full animate-in fade-in zoom-in-95 fill-mode-both"
@@ -553,12 +511,6 @@ export default function Dashboard() {
                             }`}>
                               {page.generation_mode === 'nextjs' ? 'Next.js' : 'HTML'}
                             </span>
-                            {autoMaintainEnabled && (
-                              <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                                <Bot className="mr-1 h-3 w-3" />
-                                Auto-Maintain On
-                              </span>
-                            )}
                           </div>
                           {page.published_at && page.slug && (
                             <p className="text-[13px] font-mono text-gray-400 truncate mb-1.5 bg-gray-50/50 rounded-lg px-2.5 py-1.5 w-fit border border-gray-100/50">
@@ -568,51 +520,6 @@ export default function Dashboard() {
                           <p className="text-[13px] text-gray-400 font-medium mt-1">
                             Created {new Date(page.created_at).toLocaleDateString()}
                           </p>
-
-                          <div className={`mt-6 rounded-2xl border px-5 py-4 transition-all duration-300 ${
-                            hasPremiumAutoMaintain
-                              ? autoMaintainEnabled
-                                ? 'border-emerald-100 bg-gradient-to-br from-emerald-50/90 to-white'
-                                : 'border-gray-100/80 bg-gray-50/50'
-                              : 'border-amber-100 bg-amber-50/80'
-                          }`}>
-                            <div className="flex items-start gap-3">
-                              <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] ${
-                                hasPremiumAutoMaintain
-                                  ? autoMaintainEnabled
-                                    ? 'border-emerald-100 bg-white text-emerald-600'
-                                    : 'border-gray-100/80 bg-white text-gray-400'
-                                  : 'border-amber-200 bg-white text-amber-600'
-                              }`}>
-                                {hasPremiumAutoMaintain ? <Bot className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-[13px] font-semibold text-gray-700">Auto-Maintain</p>
-                                {hasPremiumAutoMaintain ? (
-                                  autoMaintainEnabled ? (
-                                    <>
-                                      <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                                        {getAutoMaintainModeLabel(autoMaintainSettings.maintenance_mode)} •{' '}
-                                        {summarizeAutoMaintainScopes(autoMaintainSettings.allowed_scopes)}
-                                      </p>
-                                      <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-emerald-600">
-                                        Trigger-based updates active
-                                      </p>
-                                    </>
-                                  ) : (
-                                    <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                                      Off for now. Turn it on to let AI watch approved sections and refresh them when meaningful triggers happen.
-                                    </p>
-                                  )
-                                ) : (
-                                  <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                                    Paid plans can enable trigger-based AI maintenance with approval controls.
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
                           {page.published_at && (
                             <div className={`mt-4 rounded-2xl border px-5 py-4 transition-all duration-300 ${
                               hasPremiumAnalytics
@@ -620,7 +527,7 @@ export default function Dashboard() {
                                 : 'border-gray-100/80 bg-gray-50/50'
                             }`}>
                               {hasPremiumAnalytics ? (
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-4">
                                   <div>
                                     <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-indigo-400/80">
                                       Views
@@ -637,6 +544,14 @@ export default function Dashboard() {
                                       {analyticsOverview[page.id]?.unique_visitors ?? 0}
                                     </p>
                                   </div>
+                                  <div>
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-indigo-400/80">
+                                      7 days
+                                    </p>
+                                    <p className="mt-1.5 text-2xl font-bold tracking-tight text-indigo-950">
+                                      {analyticsOverview[page.id]?.views_last_7_days ?? 0}
+                                    </p>
+                                  </div>
                                 </div>
                               ) : (
                                 <div className="flex items-start gap-3">
@@ -646,7 +561,7 @@ export default function Dashboard() {
                                   <div>
                                     <p className="text-[13px] font-semibold text-gray-700">Premium analytics</p>
                                     <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                                      Upgrade to Pro or Studio to see traffic, visitors, and referrers.
+                                      Upgrade to Pro or Studio to see traffic, visitors, campaigns, and devices.
                                     </p>
                                   </div>
                                 </div>
@@ -690,19 +605,6 @@ export default function Dashboard() {
                                 Analytics
                               </button>
                             )}
-                            <button
-                              onClick={() => setAutoMaintainTarget(page)}
-                              className={`flex items-center text-[13px] font-medium transition-colors ${
-                                hasPremiumAutoMaintain
-                                  ? autoMaintainEnabled
-                                    ? 'text-emerald-600 hover:text-emerald-700'
-                                    : 'text-gray-600 hover:text-gray-900'
-                                  : 'text-amber-600 hover:text-amber-700'
-                              }`}
-                            >
-                              <WandSparkles className="w-4 h-4 mr-1.5 opacity-70" />
-                              Auto-Maintain
-                            </button>
                             <Link
                               to={`/edit/${page.id}`}
                               className="flex items-center text-[13px] font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
@@ -726,8 +628,6 @@ export default function Dashboard() {
                           </button>
                         </div>
                       </div>
-                    );
-                  })()
                 ))}
               </div>
             )}
@@ -926,42 +826,6 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <div className={`rounded-2xl border p-5 shadow-sm ${
-                hasPremiumAutoMaintain ? 'border-emerald-100 bg-emerald-50/70' : 'border-amber-100 bg-amber-50/80'
-              }`}>
-                <div className="flex items-center gap-2 mb-3">
-                  {hasPremiumAutoMaintain ? (
-                    <Bot className="w-4 h-4 text-emerald-600" />
-                  ) : (
-                    <Lock className="w-4 h-4 text-amber-600" />
-                  )}
-                  <h3 className="text-sm font-semibold text-gray-900">Auto-Maintain</h3>
-                </div>
-                {hasPremiumAutoMaintain ? (
-                  <>
-                    <p className="text-2xl font-bold tracking-tight text-emerald-950">{enabledAutoMaintainCount}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-emerald-800">
-                      Site{enabledAutoMaintainCount === 1 ? '' : 's'} currently watched for trigger-based AI updates.
-                    </p>
-                    <p className="mt-3 text-xs leading-relaxed text-gray-600">
-                      Turn it on from any site card to approve boundaries, pick a maintenance mode, and let AI react to real changes instead of random edits.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm font-medium text-gray-800">Premium feature</p>
-                    <p className="mt-1 text-xs leading-relaxed text-gray-600">
-                      Paid plans can keep sites fresh automatically with approval modes and trigger-based maintenance rules.
-                    </p>
-                    <button
-                      onClick={() => navigate('/settings')}
-                      className="mt-4 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-gray-800"
-                    >
-                      Unlock Auto-Maintain
-                    </button>
-                  </>
-                )}
-              </div>
             </div>
           )}
         </div>
@@ -1062,17 +926,6 @@ export default function Dashboard() {
           setAnalyticsTarget(null);
           setAnalyticsError(null);
           setAnalyticsLoading(false);
-        }}
-        onUpgrade={() => navigate('/settings')}
-      />
-      <AutoMaintainModal
-        open={!!autoMaintainTarget}
-        page={autoMaintainTarget ? { id: autoMaintainTarget.id, title: autoMaintainTarget.title } : null}
-        currentTier={currentTier}
-        initialSettings={autoMaintainTarget ? autoMaintainByPage[autoMaintainTarget.id] || null : null}
-        onClose={() => setAutoMaintainTarget(null)}
-        onSaved={(settings) => {
-          setAutoMaintainByPage((prev) => ({ ...prev, [settings.page_id]: settings }));
         }}
         onUpgrade={() => navigate('/settings')}
       />

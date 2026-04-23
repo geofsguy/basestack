@@ -26,6 +26,7 @@ export interface SiteContent {
   generationMode: SiteGenerationMode;
   framework: string | null;
   projectFiles?: SiteProjectFile[] | null;
+  responseMessage?: string | null;
 }
 
 export interface SiteAnalyticsPoint {
@@ -38,11 +39,25 @@ export interface SiteAnalyticsReferrer {
   views: number;
 }
 
+export interface SiteAnalyticsBreakdownItem {
+  name: string;
+  views: number;
+}
+
+export interface SiteAnalyticsRecentView {
+  viewed_at: string;
+  source: string;
+  device_type: string;
+  browser: string;
+  os: string;
+}
+
 export interface SiteAnalyticsOverviewItem {
   page_id: string;
   total_views: number;
   unique_visitors: number;
   views_last_7_days: number;
+  views_last_30_days: number;
   last_viewed_at: string | null;
 }
 
@@ -51,9 +66,22 @@ export interface SiteAnalytics {
   total_views: number;
   unique_visitors: number;
   views_last_7_days: number;
+  views_last_30_days: number;
+  returning_visitors: number;
+  direct_views: number;
+  referral_views: number;
+  social_views: number;
+  search_views: number;
+  average_daily_views: number;
   last_viewed_at: string | null;
   trend: SiteAnalyticsPoint[];
   top_referrers: SiteAnalyticsReferrer[];
+  top_sources: SiteAnalyticsReferrer[];
+  devices: SiteAnalyticsBreakdownItem[];
+  browsers: SiteAnalyticsBreakdownItem[];
+  operating_systems: SiteAnalyticsBreakdownItem[];
+  campaigns: SiteAnalyticsBreakdownItem[];
+  recent_views: SiteAnalyticsRecentView[];
 }
 
 export type AutoMaintainScope =

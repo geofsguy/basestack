@@ -1,6 +1,24 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Wand2, X, Send, Loader2, Globe, MousePointer2, MousePointerClick } from 'lucide-react';
+import {
+  Wand2,
+  X,
+  Send,
+  Loader2,
+  Globe,
+  MousePointer2,
+  MousePointerClick,
+  Bot,
+  CheckCircle2,
+  Clock3,
+  Layers3,
+  LayoutTemplate,
+  MessageSquareText,
+  Palette,
+  Sparkles,
+  Target,
+  Type,
+} from 'lucide-react';
 import { SiteContent } from '../types';
 import PublishModal from './PublishModal';
 import Watermark from './Watermark';
@@ -10,7 +28,7 @@ import { sanitizeGeneratedHtml } from '../services/htmlSanitizer';
 interface GeneratedSiteProps {
   content: SiteContent & { id?: string; slug?: string | null; published_at?: string | null };
   onReset: () => void;
-  onRefine: (prompt: string) => void;
+  onRefine: (prompt: string) => Promise<string | void>;
   isRefining: boolean;
   error?: string | null;
 }
@@ -23,6 +41,22 @@ interface PickedElement {
   outerHTML: string;
 }
 
+interface RefinementMessage {
+  id: string;
+  role: 'user' | 'ai';
+  text: string;
+  status?: 'thinking' | 'done' | 'error';
+}
+
+const quickActions = [
+  { label: 'Sharpen hero', prompt: 'Make the hero section clearer, more premium, and more action-oriented.', icon: Target },
+  { label: 'Improve layout', prompt: 'Improve the page layout, spacing, and visual hierarchy.', icon: LayoutTemplate },
+  { label: 'Polish copy', prompt: 'Rewrite the copy to be concise, confident, and more compelling.', icon: Type },
+  { label: 'Refresh colors', prompt: 'Refresh the color palette with a polished, distinctive direction.', icon: Palette },
+];
+
+const makeMessageId = () => Math.random().toString(36).slice(2, 10);
+
 export default function GeneratedSite({ content, onReset, onRefine, isRefining, error }: GeneratedSiteProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [refinementPrompt, setRefinementPrompt] = useState('');
@@ -33,6 +67,14 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
   const [isExporting, setIsExporting] = useState(false);
   const [isPickerActive, setIsPickerActive] = useState(false);
   const [pickedElements, setPickedElements] = useState<PickedElement[]>([]);
+  const [refinementMessages, setRefinementMessages] = useState<RefinementMessage[]>([
+    {
+      id: 'ready',
+      role: 'ai',
+      text: 'Ready to tune the page.',
+      status: 'done',
+    },
+  ]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const sanitizedHtml = sanitizeGeneratedHtml(content.html);
 
@@ -136,7 +178,7 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
     setPickedElements((prev) => prev.filter((el) => el.id !== id));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!refinementPrompt.trim() && pickedElements.length === 0) || isRefining) return;
 
@@ -153,10 +195,52 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
     }
 
     const fullPrompt = contextPrefix + refinementPrompt;
-    onRefine(fullPrompt);
+    const visiblePrompt = refinementPrompt.trim() || 'Update the selected element(s).';
+    const aiMessageId = makeMessageId();
+    setRefinementMessages((prev) => [
+      ...prev.filter((message) => message.id !== 'ready'),
+      {
+        id: makeMessageId(),
+        role: 'user',
+        text: visiblePrompt,
+      },
+      {
+        id: aiMessageId,
+        role: 'ai',
+        text: 'Working on it...',
+        status: 'thinking',
+      },
+    ]);
     setRefinementPrompt('');
     setPickedElements([]);
     setIsPickerActive(false);
+
+    try {
+      const responseMessage = await onRefine(fullPrompt);
+      setRefinementMessages((prev) =>
+        prev.map((message) =>
+          message.id === aiMessageId
+            ? {
+                ...message,
+                text: responseMessage || 'Refinement applied.',
+                status: 'done',
+              }
+            : message
+        )
+      );
+    } catch (err: any) {
+      setRefinementMessages((prev) =>
+        prev.map((message) =>
+          message.id === aiMessageId
+            ? {
+                ...message,
+                text: err?.message || 'Could not apply that refinement.',
+                status: 'error',
+              }
+            : message
+        )
+      );
+    }
   };
 
   // ── Build the HTML document with injected picker script ───────────────────
@@ -320,7 +404,7 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
         </div>
       </div>
 
-      <div className={`w-full h-full transition-all duration-300 ${isSidebarOpen ? 'pr-[420px]' : ''}`}>
+      <div className={`w-full h-full transition-all duration-300 ${isSidebarOpen ? 'pr-[440px]' : ''}`}>
         <iframe 
           ref={iframeRef}
           srcDoc={htmlDoc}
@@ -334,7 +418,7 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
           </div>
         )}
         {/* Watermark — rendered outside the iframe so it can't be removed via HTML editing */}
-        <Watermark />
+        <Watermark pageId={content.id} slug={liveSlug} />
         {isRefining && (
           <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-40">
             <div className="bg-white px-6 py-4 rounded-2xl shadow-xl flex items-center space-x-3">
@@ -367,50 +451,92 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="absolute top-0 right-0 bottom-0 w-[420px] bg-white shadow-[-10px_0_30px_rgba(0,0,0,0.05)] border-l border-gray-100 z-50 flex flex-col"
+            className="absolute top-0 right-0 bottom-0 w-[440px] bg-[#f8fafc] shadow-[-18px_0_45px_rgba(15,23,42,0.12)] border-l border-slate-200 z-50 flex flex-col"
           >
-            {/* Sidebar Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <div className="flex items-center space-x-2 text-indigo-600">
-                <Wand2 className="w-5 h-5" />
-                <h3 className="font-semibold text-gray-900">Refine with AI</h3>
+            <div className="border-b border-slate-200 bg-white">
+              <div className="flex items-start justify-between p-5">
+                <div>
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Editor online
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-900/20">
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-950">Refine with AI</h3>
+                      <p className="text-sm text-slate-500">Command center for live site edits</p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                  aria-label="Close refine panel"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button 
-                onClick={() => setIsSidebarOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+
+              <div className="grid grid-cols-3 border-t border-slate-100 text-center">
+                <div className="px-4 py-3">
+                  <div className="text-xs font-semibold text-slate-950">{content.generationMode === 'nextjs' ? 'Next.js' : 'HTML'}</div>
+                  <div className="text-[11px] text-slate-400">Mode</div>
+                </div>
+                <div className="border-x border-slate-100 px-4 py-3">
+                  <div className="text-xs font-semibold text-slate-950">{pickedElements.length}</div>
+                  <div className="text-[11px] text-slate-400">Selected</div>
+                </div>
+                <div className="px-4 py-3">
+                  <div className="text-xs font-semibold text-slate-950">{isRefining ? 'Working' : 'Ready'}</div>
+                  <div className="text-[11px] text-slate-400">Status</div>
+                </div>
+              </div>
             </div>
 
-            {/* Pick Element Toggle */}
-            <div className="px-6 pt-5 pb-3">
-              <button
-                onClick={() => setIsPickerActive((p) => !p)}
-                className={`w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl text-sm font-medium border transition-all duration-200 ${
-                  isPickerActive
-                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50'
-                }`}
-              >
-                <MousePointer2 className="w-4 h-4" />
-                {isPickerActive ? 'Picking — click an element…' : 'Pick Element'}
-                {pickedElements.length > 0 && !isPickerActive && (
-                  <span className="ml-1 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 text-xs font-semibold">
-                    {pickedElements.length}
-                  </span>
-                )}
-              </button>
-              {!isPickerActive && (
-                <p className="text-[11px] text-gray-400 text-center mt-2 leading-relaxed">
-                  Select elements on the preview to give the AI precise context
-                </p>
-              )}
-            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              <div className="space-y-4">
+                <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700">
+                        <MousePointer2 className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-950">Target edits</p>
+                        <p className="text-xs text-slate-500">Pick preview elements for precision</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setIsPickerActive((p) => !p)}
+                      className={`inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs font-semibold transition-all ${
+                        isPickerActive
+                          ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/25'
+                          : 'border border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-cyan-700'
+                      }`}
+                    >
+                      {isPickerActive ? 'Picking' : 'Pick'}
+                    </button>
+                  </div>
 
-            <div className="flex-1 p-6 pt-2 overflow-y-auto">
-              <div className="space-y-5">
-                {/* Picked Element Chips */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {quickActions.map((action) => {
+                      const Icon = action.icon;
+                      return (
+                        <button
+                          key={action.label}
+                          onClick={() => setRefinementPrompt(action.prompt)}
+                          className="flex min-h-16 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-white hover:text-slate-950"
+                        >
+                          <Icon className="h-4 w-4 flex-shrink-0 text-slate-500" />
+                          <span>{action.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+
                 <AnimatePresence initial={false}>
                   {pickedElements.length > 0 && (
                     <motion.div
@@ -419,13 +545,11 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
                       exit={{ opacity: 0, height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                          Selected Elements
-                        </p>
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Selected elements</p>
                         <button
                           onClick={() => setPickedElements([])}
-                          className="text-[11px] text-gray-400 hover:text-red-500 transition-colors"
+                          className="text-[11px] font-medium text-slate-400 transition-colors hover:text-red-500"
                         >
                           Clear all
                         </button>
@@ -439,26 +563,27 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
                               animate={{ opacity: 1, x: 0 }}
                               exit={{ opacity: 0, x: -10, height: 0, marginBottom: 0 }}
                               transition={{ duration: 0.18 }}
-                              className="flex items-start gap-2 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2.5 group"
+                              className="group flex items-start gap-2 rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2.5"
                             >
                               <div className="flex-1 min-w-0">
-                                <span className="inline-block font-mono text-[10px] bg-indigo-100 text-indigo-700 rounded px-1.5 py-0.5 mb-1">
+                                <span className="mb-1 inline-block rounded bg-white px-1.5 py-0.5 font-mono text-[10px] text-cyan-700">
                                   &lt;{el.tag}&gt;
                                 </span>
                                 {el.text && (
-                                  <p className="text-xs text-indigo-800 leading-relaxed truncate">
+                                  <p className="truncate text-xs leading-relaxed text-cyan-950">
                                     "{el.text}"
                                   </p>
                                 )}
                                 {!el.text && el.classes && (
-                                  <p className="text-[10px] text-indigo-500 font-mono truncate">
+                                  <p className="truncate font-mono text-[10px] text-cyan-600">
                                     .{el.classes.trim().split(' ')[0]}
                                   </p>
                                 )}
                               </div>
                               <button
                                 onClick={() => removePicked(el.id)}
-                                className="w-5 h-5 flex items-center justify-center rounded-full text-indigo-300 hover:text-indigo-600 hover:bg-indigo-100 transition-all flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100"
+                                className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-cyan-300 opacity-0 transition-all hover:bg-cyan-100 hover:text-cyan-700 group-hover:opacity-100"
+                                aria-label="Remove selected element"
                               >
                                 <X className="w-3 h-3" />
                               </button>
@@ -470,65 +595,107 @@ export default function GeneratedSite({ content, onReset, onRefine, isRefining, 
                   )}
                 </AnimatePresence>
 
-                {/* Instructions hint */}
-                <div className="bg-indigo-50 text-indigo-800 p-4 rounded-xl text-sm leading-relaxed">
-                  Tell me what you'd like to change! I can update the design, change colors, rewrite copy, or add entirely new sections.
-                </div>
-                
-                {/* Example prompts */}
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Examples</p>
-                  <div className="flex flex-wrap gap-2">
-                    <button onClick={() => setRefinementPrompt("Make the fonts more elegant and cursive")} className="text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors text-left">
-                      "Make the fonts more elegant"
-                    </button>
-                    <button onClick={() => setRefinementPrompt("Change the color theme to dark mode")} className="text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors text-left">
-                      "Change to dark mode"
-                    </button>
-                    <button onClick={() => setRefinementPrompt("Add a functional contact form section at the bottom")} className="text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors text-left">
-                      "Add a contact form"
-                    </button>
+                <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Layers3 className="h-4 w-4 text-amber-600" />
+                      <p className="text-sm font-semibold text-slate-950">Edit briefing</p>
+                    </div>
+                    <span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                      Live preview
+                    </span>
                   </div>
-                </div>
+                  <div className="space-y-2 text-sm text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      <span>Design, copy, layout, and sections can be edited.</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MessageSquareText className="h-4 w-4 text-slate-500" />
+                      <span>AI replies here after each refinement.</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Bot className="h-4 w-4 text-slate-700" />
+                      <p className="text-sm font-semibold text-slate-950">Activity</p>
+                    </div>
+                    <Clock3 className="h-4 w-4 text-slate-300" />
+                  </div>
+                  <div className="space-y-3">
+                    {refinementMessages.slice(-5).map((message) => (
+                      <div
+                        key={message.id}
+                        className={`rounded-lg px-3 py-2.5 text-sm leading-relaxed ${
+                          message.role === 'user'
+                            ? 'ml-7 bg-slate-950 text-white'
+                            : message.status === 'error'
+                              ? 'mr-7 border border-red-100 bg-red-50 text-red-700'
+                              : 'mr-7 border border-slate-200 bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider opacity-70">
+                          {message.role === 'ai' && message.status === 'thinking' ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : message.role === 'ai' ? (
+                            <Bot className="h-3 w-3" />
+                          ) : (
+                            <MessageSquareText className="h-3 w-3" />
+                          )}
+                          {message.role === 'ai' ? 'AI' : 'You'}
+                        </div>
+                        {message.text}
+                      </div>
+                    ))}
+                  </div>
+                </section>
               </div>
             </div>
 
-            {/* Input Area */}
-            <div className="p-6 border-t border-gray-100 bg-gray-50">
+            <div className="border-t border-slate-200 bg-white p-5">
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl text-xs font-medium leading-relaxed">
+                <div className="mb-4 rounded-lg border border-red-100 bg-red-50 p-3 text-xs font-medium leading-relaxed text-red-600">
                   {error}
                 </div>
               )}
               <form onSubmit={handleSubmit} className="relative">
-                {/* Context badge */}
-                {pickedElements.length > 0 && (
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <MousePointerClick className="w-3 h-3 text-indigo-500" />
-                    <span className="text-[11px] text-indigo-600 font-medium">
-                      {pickedElements.length} element{pickedElements.length !== 1 ? 's' : ''} selected as context
-                    </span>
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Wand2 className="h-3.5 w-3.5 text-slate-500" />
+                    <span className="text-xs font-semibold text-slate-700">Command</span>
                   </div>
-                )}
+                  {pickedElements.length > 0 && (
+                    <div className="flex items-center gap-1.5 rounded-full bg-cyan-50 px-2 py-1">
+                      <MousePointerClick className="h-3 w-3 text-cyan-600" />
+                      <span className="text-[11px] font-medium text-cyan-700">
+                        {pickedElements.length} selected
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <textarea
                   value={refinementPrompt}
                   onChange={(e) => setRefinementPrompt(e.target.value)}
-                  placeholder={pickedElements.length > 0 ? "What should I do with the selected element(s)?" : "Ask for changes..."}
-                  className="w-full pl-4 pr-12 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all resize-none bg-white"
+                  placeholder={pickedElements.length > 0 ? "Tell AI what to do with the selected element(s)" : "Describe the edit you want"}
+                  className="min-h-24 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 py-3 pl-4 pr-12 text-sm text-slate-950 outline-none transition-all placeholder:text-slate-400 focus:border-slate-400 focus:bg-white focus:ring-2 focus:ring-slate-200"
                   rows={3}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      handleSubmit(e);
+                      e.currentTarget.form?.requestSubmit();
                     }
                   }}
                 />
                 <button
                   type="submit"
                   disabled={(!refinementPrompt.trim() && pickedElements.length === 0) || isRefining}
-                  className="absolute bottom-3 right-3 text-white bg-indigo-600 hover:bg-indigo-700 p-2 rounded-lg disabled:opacity-50 disabled:hover:bg-indigo-600 transition-colors"
+                  className="absolute bottom-3 right-3 rounded-lg bg-slate-950 p-2 text-white transition-colors hover:bg-slate-800 disabled:opacity-40 disabled:hover:bg-slate-950"
+                  aria-label="Send refinement command"
                 >
-                  <Send className="w-4 h-4" />
+                  {isRefining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </button>
               </form>
             </div>
