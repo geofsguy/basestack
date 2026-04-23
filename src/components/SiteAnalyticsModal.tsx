@@ -141,7 +141,7 @@ export default function SiteAnalyticsModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-2 backdrop-blur-md sm:p-4 lg:p-6"
           onClick={onClose}
         >
           <motion.div
@@ -149,7 +149,7 @@ export default function SiteAnalyticsModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-            className="relative w-full max-w-4xl overflow-hidden rounded-[2.5rem] border border-white/40 bg-white/95 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.3)] backdrop-blur-2xl"
+            className="relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-7xl flex-col overflow-hidden rounded-[1.75rem] border border-white/50 bg-white/95 shadow-[0_40px_120px_-24px_rgba(0,0,0,0.35)] ring-1 ring-black/5 backdrop-blur-2xl sm:max-h-[calc(100dvh-3rem)] sm:rounded-[2.25rem]"
             onClick={(event) => event.stopPropagation()}
           >
             {/* Subtle background noise/grid */}
@@ -162,16 +162,16 @@ export default function SiteAnalyticsModal({
             />
             <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-indigo-50/50 to-transparent pointer-events-none" />
 
-            <div className="relative z-10 p-8 sm:p-10">
-              <button
-                onClick={onClose}
-                className="absolute right-6 top-6 sm:right-8 sm:top-8 flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-400 transition-all hover:scale-110 hover:border-gray-300 hover:text-gray-900 shadow-sm"
-                aria-label="Close analytics"
-              >
-                <X className="h-4 w-4" />
-              </button>
+            <button
+              onClick={onClose}
+              className="absolute right-4 top-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 shadow-sm transition-all hover:scale-110 hover:border-gray-300 hover:text-gray-900 sm:right-6 sm:top-6"
+              aria-label="Close analytics"
+            >
+              <X className="h-4 w-4" />
+            </button>
 
-              <div className="mb-10 max-w-2xl">
+            <div className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-5 py-6 [scrollbar-gutter:stable] sm:p-8 lg:p-12">
+              <div className="mb-8 max-w-3xl pr-12 sm:mb-10">
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white ring-1 ring-inset ring-gray-200/80 px-3 py-1.5 shadow-sm">
                   <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center">
                     <BarChart3 className="h-3 w-3 text-indigo-600" />
@@ -204,7 +204,7 @@ export default function SiteAnalyticsModal({
                       Upgrade to Studio or Pro to see exactly who's visiting your site, where they're coming from, and how your traffic trends over time. 
                     </p>
                     
-                    <div className="grid w-full gap-3 sm:grid-cols-3 mb-10">
+                    <div className="mb-10 grid w-full gap-3 sm:grid-cols-3">
                       {[
                         { label: 'Real-time Views', icon: Eye },
                         { label: 'Unique Visitors', icon: Users },
@@ -247,7 +247,7 @@ export default function SiteAnalyticsModal({
               ) : (
                 <div className="space-y-6 sm:space-y-8">
                   {/* Stats Row */}
-                  <div className="grid gap-4 sm:gap-6 grid-cols-2 md:grid-cols-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4">
                     {[
                       { label: 'Total Views', value: analytics?.total_views ?? 0, icon: Eye, color: 'text-indigo-600', bg: 'bg-indigo-50', ring: 'ring-indigo-100' },
                       { label: 'Unique Visitors', value: analytics?.unique_visitors ?? 0, icon: Users, color: 'text-violet-600', bg: 'bg-violet-50', ring: 'ring-violet-100' },
@@ -274,7 +274,7 @@ export default function SiteAnalyticsModal({
                     ))}
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
                     {[
                       { label: '30d Views', value: analytics?.views_last_30_days ?? 0, icon: Clock3 },
                       { label: 'Daily Avg', value: analytics?.average_daily_views ?? 0, icon: BarChart3 },
@@ -293,7 +293,7 @@ export default function SiteAnalyticsModal({
                     ))}
                   </div>
 
-                  <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+                  <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
                     {/* Chart Area */}
                     <div className="rounded-[2rem] border border-gray-100 bg-white p-6 sm:p-8 shadow-sm relative group overflow-hidden">
                       <div className="mb-8 flex items-center justify-between">
@@ -368,7 +368,7 @@ export default function SiteAnalyticsModal({
                     </div>
                   </div>
 
-                  <div className="grid gap-6 lg:grid-cols-3">
+                  <div className="grid gap-6 xl:grid-cols-3">
                     <BreakdownList
                       title="Devices"
                       subtitle="Desktop, mobile, tablet, and bot split"
@@ -389,7 +389,7 @@ export default function SiteAnalyticsModal({
                     />
                   </div>
 
-                  <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+                  <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
                     <BreakdownList
                       title="Referrers"
                       subtitle="Exact referring domains"
