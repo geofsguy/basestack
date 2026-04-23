@@ -57,16 +57,16 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
 
 function Hero({ onStart }: { onStart: () => void }) {
   return (
-    <section className="relative min-h-[840px] overflow-hidden bg-[#f4f5fe] px-5 pb-16 pt-5 sm:px-8 lg:min-h-[780px] lg:px-12 lg:pb-20">
+    <section className="relative overflow-hidden bg-[#f4f5fe] px-5 pb-16 pt-5 sm:px-8 lg:min-h-[760px] lg:px-12 lg:pb-20">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(244,245,254,0.62)_44%,#f4f5fe_100%)]" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#f4f5fe] to-transparent" />
 
       <motion.img
         src={heroShowcase}
         alt=""
-        className="pointer-events-none absolute bottom-8 left-1/2 h-[560px] max-w-none -translate-x-[42%] opacity-95 sm:h-[640px] lg:bottom-2 lg:left-auto lg:right-[-135px] lg:h-[760px] lg:translate-x-0 xl:right-[-50px]"
+        className="pointer-events-none absolute right-[-46px] top-[104px] hidden w-[58vw] max-w-[900px] rounded-[28px] object-contain opacity-100 shadow-[0_24px_80px_rgba(81,91,145,0.16)] lg:block xl:right-2"
         initial={{ opacity: 0, scale: 1.04, y: 28 }}
-        animate={{ opacity: 0.95, scale: 1, y: 0 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
       />
 
@@ -166,13 +166,20 @@ function Hero({ onStart }: { onStart: () => void }) {
           <Metric value="1 click" label="publish or export" />
           <Metric value="24/7" label="AI editing flow" />
         </motion.div>
+
+        <motion.img
+          src={heroShowcase}
+          alt="A BaseStack AI website builder preview with portfolio, assistant, analytics, and publish cards."
+          variants={fadeUp}
+          className="mt-12 w-full rounded-[24px] object-cover shadow-[0_22px_70px_rgba(81,91,145,0.16)] lg:hidden"
+        />
       </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.45 }}
-        className="absolute bottom-8 left-5 right-5 z-10 grid gap-3 sm:left-8 sm:right-auto sm:w-[480px] sm:grid-cols-2 lg:left-auto lg:right-12 lg:w-[520px]"
+        className="relative z-10 mt-8 grid gap-3 sm:w-[480px] sm:grid-cols-2 lg:absolute lg:bottom-8 lg:left-auto lg:right-12 lg:mt-0 lg:w-[520px]"
       >
         <FloatingNote icon={<CheckCircle2 className="h-5 w-5" />} title="Site published" text="Custom domain ready" tone="green" />
         <FloatingNote icon={<MessageCircle className="h-5 w-5" />} title="AI edit applied" text="Updated hero copy" tone="violet" />
