@@ -1,920 +1,571 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import {
-  Sparkles, ArrowRight, Code2, Palette, Zap, Wand2, Globe, CheckCircle2,
-  MousePointer2, Layers, Share2, Star, ShieldCheck, MessageSquareText, Server, Check
+  ArrowRight,
+  Bot,
+  Check,
+  CheckCircle2,
+  Code2,
+  Globe2,
+  Layers,
+  MessageCircle,
+  MousePointer2,
+  Palette,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  WandSparkles,
+  Zap,
 } from 'lucide-react';
+import heroShowcase from '../assets/landing-hero-showcase.png';
+import styleBoard from '../assets/landing-style-board.png';
 import Logo from './Logo';
 
-/* ─── Ambient Background ─────────────────────────────────── */
-function AmbientBackground() {
-  return (
-    <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-      <div className="absolute inset-0 bg-[#f8f7f2]" />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(135deg, rgba(124,58,237,0.12) 0%, transparent 34%), linear-gradient(315deg, rgba(14,165,233,0.12) 0%, transparent 38%), linear-gradient(180deg, rgba(16,185,129,0.08) 0%, transparent 56%)',
-        }}
-      />
-      <div
-        className="absolute inset-0 opacity-[0.055]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(17,24,39,1) 1px, transparent 1px), linear-gradient(90deg, rgba(17,24,39,1) 1px, transparent 1px)',
-          backgroundSize: '56px 56px',
-        }}
-      />
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'4\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")',
-          backgroundRepeat: 'repeat',
-          backgroundSize: '160px',
-        }}
-      />
-      <div className="absolute inset-x-0 top-0 h-[520px] bg-gradient-to-b from-white/70 via-white/10 to-transparent" />
-    </div>
-  );
+const TRUSTED_BY = ['webflow', 'PLAID', 'stripe', 'Notion', 'loom'];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 22, filter: 'blur(8px)' },
+  show: { opacity: 1, y: 0, filter: 'blur(0px)' },
+};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-/* ─── Floating Badge ─────────────────────────────────────── */
-function FloatingBadge({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <motion.div
-      className={`absolute hidden lg:flex items-center gap-2 bg-white/90 backdrop-blur-xl border border-white/80 rounded-2xl px-4 py-2.5 shadow-xl shadow-gray-950/10 text-sm font-medium ${className}`}
-      animate={{ y: [0, -8, 0] }}
-      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/* ─── Browser Mockup ─────────────────────────────────────── */
-function BrowserMockup() {
-  return (
-    <div className="rounded-[1.75rem] border border-white/70 bg-white shadow-2xl shadow-gray-950/15 overflow-hidden ring-1 ring-gray-950/5">
-      {/* Chrome bar */}
-      <div className="h-12 bg-white border-b border-gray-100 flex items-center px-4 gap-3">
-        <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-red-400" />
-          <div className="w-3 h-3 rounded-full bg-amber-400" />
-          <div className="w-3 h-3 rounded-full bg-emerald-400" />
-        </div>
-        <div className="flex-1 bg-gray-100 rounded-lg h-7 flex items-center justify-between px-3">
-          <span className="text-gray-400 text-xs">alexchen.basestack.app</span>
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-        </div>
-      </div>
-
-      {/* Page content */}
-      <div className="relative bg-[#fafafa] p-5 sm:p-8 min-h-[390px]">
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(124,58,237,0.08),transparent_42%),linear-gradient(315deg,rgba(16,185,129,0.08),transparent_36%)]" />
-        {/* Nav */}
-        <div className="relative flex justify-between items-center mb-8">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gray-950" />
-            <div className="w-16 h-3 rounded-full bg-gray-800" />
-          </div>
-          <div className="flex gap-4">
-            <div className="w-10 h-2.5 rounded-full bg-gray-300" />
-            <div className="w-10 h-2.5 rounded-full bg-gray-300" />
-            <div className="w-16 h-6 rounded-full bg-gray-950" />
-          </div>
-        </div>
-
-        <div className="relative grid grid-cols-1 lg:grid-cols-[1.08fr_0.92fr] gap-5 items-stretch">
-          <div className="rounded-2xl bg-white border border-gray-100 p-6 shadow-sm">
-            <motion.div
-              animate={{ opacity: [0.72, 1, 0.72] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <div className="w-11/12 h-8 rounded-xl bg-gray-950 mb-3" />
-              <div className="w-3/5 h-4 rounded-lg bg-gray-500 mb-2" />
-              <div className="w-4/5 h-4 rounded-lg bg-gray-300 mb-7" />
-            </motion.div>
-            <div className="grid grid-cols-3 gap-2.5">
-              {[
-                { bg: 'bg-violet-50', accent: 'bg-violet-500' },
-                { bg: 'bg-sky-50', accent: 'bg-sky-500' },
-                { bg: 'bg-emerald-50', accent: 'bg-emerald-500' },
-              ].map((c, i) => (
-                <motion.div
-                  key={i}
-                  className={`${c.bg} rounded-2xl p-3 border border-white`}
-                  animate={{ y: [0, -4, 0] }}
-                  transition={{ duration: 5 + i, repeat: Infinity, ease: 'easeInOut', delay: i * 0.7 }}
-                >
-                  <div className={`w-7 h-7 rounded-xl ${c.accent} mb-3`} />
-                  <div className="w-full h-2 rounded bg-white mb-1.5" />
-                  <div className="w-2/3 h-2 rounded bg-white/80" />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-3">
-            <div className="rounded-2xl bg-gray-950 text-white p-5 shadow-lg shadow-gray-950/10">
-              <div className="flex items-center justify-between mb-8">
-                <span className="text-xs text-gray-400">AI direction</span>
-                <MessageSquareText className="w-4 h-4 text-violet-300" />
-              </div>
-              <div className="space-y-2">
-                <div className="h-2.5 w-full rounded-full bg-white/70" />
-                <div className="h-2.5 w-4/5 rounded-full bg-white/40" />
-                <div className="h-2.5 w-2/3 rounded-full bg-white/20" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-white border border-gray-100 p-4">
-                <div className="text-2xl font-semibold tracking-tight text-gray-950">38s</div>
-                <div className="mt-1 h-2 w-14 rounded-full bg-amber-300" />
-              </div>
-              <div className="rounded-2xl bg-white border border-gray-100 p-4">
-                <div className="text-2xl font-semibold tracking-tight text-gray-950">100%</div>
-                <div className="mt-1 h-2 w-16 rounded-full bg-emerald-300" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Typing cursor effect */}
-        <motion.div
-          className="w-0.5 h-4 bg-violet-600 absolute bottom-7 right-7"
-          animate={{ opacity: [1, 0, 1] }}
-          transition={{ duration: 1, repeat: Infinity }}
-        />
-      </div>
-    </div>
-  );
-}
-
-/* ─── Bento Feature Card ─────────────────────────────────── */
-interface BentoCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  accent: string;
-  className?: string;
-  children?: React.ReactNode;
-}
-
-function BentoCard({ icon, title, description, accent, className = '', children }: BentoCardProps) {
-  return (
-    <motion.div
-      whileHover={{ y: -4, scale: 1.01 }}
-      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className={`relative rounded-3xl bg-white/90 backdrop-blur-sm border border-white shadow-sm ring-1 ring-gray-950/5 hover:shadow-xl hover:shadow-gray-950/10 transition-shadow overflow-hidden p-8 flex flex-col ${className}`}
-    >
-      {/* Accent glow */}
-      <div className={`absolute top-0 left-0 right-0 h-1 ${accent}`} />
-      <div className={`w-12 h-12 rounded-2xl ${accent} flex items-center justify-center mb-6 text-white shadow-lg shadow-gray-950/10`}>
-        {icon}
-      </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-3">{title}</h3>
-      <p className="text-gray-500 leading-relaxed text-sm flex-1">{description}</p>
-      {children && <div className="mt-6">{children}</div>}
-    </motion.div>
-  );
-}
-
-/* ─── Step Card ──────────────────────────────────────────── */
-function StepCard({ num, icon, title, desc, active }: { num: string; icon: React.ReactNode; title: string; desc: string; active?: boolean }) {
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      transition={{ duration: 0.2 }}
-      className={`relative flex flex-col items-center text-center p-8 rounded-3xl border transition-all
-        ${active
-          ? 'bg-gray-950 border-gray-800 shadow-2xl shadow-gray-950/20 text-white'
-          : 'bg-white/85 border-white shadow-sm ring-1 ring-gray-950/5'
-        }`}
-    >
-      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 text-2xl font-bold
-        ${active ? 'bg-white/10 text-white' : 'bg-gray-50 text-gray-900'}`}>
-        {icon || num}
-      </div>
-      <h3 className={`text-xl font-semibold mb-3 ${active ? 'text-white' : 'text-gray-900'}`}>{title}</h3>
-      <p className={`text-sm leading-relaxed ${active ? 'text-gray-400' : 'text-gray-500'}`}>{desc}</p>
-      {active && (
-        <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-300 to-transparent" />
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-/* ─── Testimonial ────────────────────────────────────────── */
-function Testimonial({ quote, name, title, avatar }: { quote: string; name: string; title: string; avatar: string }) {
-  return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
-      className="bg-white/90 backdrop-blur-sm rounded-3xl border border-white ring-1 ring-gray-950/5 shadow-sm p-8 flex flex-col gap-6"
-    >
-      <div className="flex gap-0.5">
-        {[...Array(5)].map((_, i) => (
-          <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-        ))}
-      </div>
-      <p className="text-gray-700 text-sm leading-relaxed flex-1">"{quote}"</p>
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-blue-500 flex items-center justify-center text-white font-semibold text-sm">
-          {avatar}
-        </div>
-        <div>
-          <p className="font-semibold text-gray-900 text-sm">{name}</p>
-          <p className="text-gray-400 text-xs">{title}</p>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── Main Component ─────────────────────────────────────── */
 export default function LandingPage({ onStart }: { onStart: () => void }) {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.08 } }
-  };
-  const itemVariants = {
-    hidden: { opacity: 0, y: 24 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
-  };
-
   return (
-    <div className="min-h-screen bg-[#f8f7f2] text-gray-900 font-sans selection:bg-violet-600 selection:text-white overflow-hidden relative">
-      <AmbientBackground />
+    <main className="min-h-screen bg-[#f4f6ff] text-[#101936]">
+      <div className="mx-auto min-h-screen w-full overflow-hidden bg-white">
+        <Hero onStart={onStart} />
+        <TrustedStrip />
+        <FeatureShowcase />
+        <BuildFlow onStart={onStart} />
+        <Testimonials />
+        <Pricing onStart={onStart} />
+        <FinalCta onStart={onStart} />
+        <Footer />
+      </div>
+    </main>
+  );
+}
 
-      {/* ── Navigation ── */}
-      <motion.nav
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-20 flex items-center justify-between px-6 py-5 max-w-7xl mx-auto"
-      >
-        <div className="flex items-center gap-2.5 font-bold text-xl tracking-tight text-gray-950">
-          <div className="grid h-9 w-9 place-items-center rounded-2xl bg-gray-950 text-white shadow-lg shadow-gray-950/10">
-            <Logo className="w-5 h-5" />
-          </div>
-          <span>BaseStack</span>
-        </div>
-        <div className="hidden md:flex items-center gap-7 rounded-full border border-white/70 bg-white/55 px-5 py-2.5 text-sm shadow-sm backdrop-blur-xl">
-          {['Features', 'How it works', 'Pricing'].map(item => (
-            <button key={item} className="font-medium text-gray-500 hover:text-gray-950 transition-colors">
-              {item}
+function Hero({ onStart }: { onStart: () => void }) {
+  return (
+    <section className="relative min-h-[840px] overflow-hidden bg-[#f4f5fe] px-5 pb-16 pt-5 sm:px-8 lg:min-h-[780px] lg:px-12 lg:pb-20">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(244,245,254,0.62)_44%,#f4f5fe_100%)]" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#f4f5fe] to-transparent" />
+
+      <motion.img
+        src={heroShowcase}
+        alt=""
+        className="pointer-events-none absolute bottom-8 left-1/2 h-[560px] max-w-none -translate-x-[42%] opacity-95 sm:h-[640px] lg:bottom-2 lg:left-auto lg:right-[-135px] lg:h-[760px] lg:translate-x-0 xl:right-[-50px]"
+        initial={{ opacity: 0, scale: 1.04, y: 28 }}
+        animate={{ opacity: 0.95, scale: 1, y: 0 }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      />
+
+      <nav className="relative z-20 flex items-center justify-between">
+        <button type="button" onClick={() => scrollToSection('top')} className="flex items-center gap-3">
+          <Logo className="h-9 w-9 text-[#665cf6]" />
+          <span className="text-2xl font-semibold text-[#101936]">BaseStack</span>
+        </button>
+
+        <div className="hidden items-center gap-1 rounded-full bg-white/78 p-1 text-sm font-semibold text-[#65708c] shadow-[0_10px_30px_rgba(36,45,80,0.08)] backdrop-blur md:flex">
+          {[
+            ['Features', 'features'],
+            ['Process', 'process'],
+            ['Pricing', 'pricing'],
+          ].map(([label, id]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => scrollToSection(id)}
+              className="rounded-full px-5 py-2 transition hover:bg-[#f3f1ff] hover:text-[#6258ff]"
+            >
+              {label}
             </button>
           ))}
         </div>
+
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={onStart}
-            className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors hidden sm:block"
+            className="hidden h-11 rounded-lg bg-white px-5 text-sm font-semibold text-[#6258ff] shadow-[0_8px_22px_rgba(35,45,80,0.1)] transition hover:bg-[#fbfbff] sm:inline-flex sm:items-center"
           >
             Sign in
           </button>
-          <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
+          <button
+            type="button"
             onClick={onStart}
-            className="bg-gray-950 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors shadow-lg shadow-gray-950/10"
+            className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#665cf6] px-5 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(102,92,246,0.25)] transition hover:bg-[#574df0]"
           >
-            Get started free
-          </motion.button>
+            Start free
+            <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
-      </motion.nav>
+      </nav>
 
-      <main className="relative z-10">
-        {/* ── Hero ── */}
-        <section className="max-w-7xl mx-auto px-6 pt-14 pb-8 sm:pt-20 sm:pb-12">
-          <div className="flex flex-col items-center text-center">
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-xl border border-white shadow-sm ring-1 ring-gray-950/5 text-sm font-medium text-gray-700 mb-8"
-            >
-              <Sparkles className="w-4 h-4 text-violet-500" />
-              AI-designed personal websites in under a minute
-              <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs px-2 py-0.5 rounded-full">Live</span>
-            </motion.div>
-
-            {/* Headline */}
-            <motion.h1
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-5xl sm:text-7xl lg:text-[5.75rem] font-semibold tracking-tight max-w-5xl mb-6 leading-[1.02]"
-            >
-              Your personal site,{' '}
-              <span className="relative inline-block">
-                <span className="relative z-10 bg-gradient-to-r from-violet-600 via-blue-600 to-violet-700 bg-clip-text text-transparent">
-                  designed by AI.
-                </span>
-                <motion.span
-                  className="absolute -bottom-1 left-1 right-1 h-1 rounded-full bg-gradient-to-r from-violet-500 via-sky-500 to-emerald-400 opacity-45"
-                  initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.8, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                  style={{ transformOrigin: 'left' }}
-                />
-              </span>
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-lg sm:text-xl text-gray-600 max-w-2xl mb-10 leading-relaxed"
-            >
-              Answer a few questions and get a unique, production-ready website with thoughtful copy, tasteful layout, and clean code. No templates, no drag-and-drop busywork.
-            </motion.p>
-
-            {/* CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row items-center gap-4 mb-16"
-            >
-              <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={onStart}
-                className="group flex items-center gap-2 px-7 py-4 bg-gray-950 text-white rounded-full text-base font-semibold hover:bg-gray-800 transition-all shadow-xl shadow-gray-950/15"
-              >
-                Start building free
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                onClick={onStart}
-                className="flex items-center gap-2 px-7 py-4 bg-white/85 backdrop-blur-xl border border-white text-gray-700 rounded-full text-base font-medium hover:bg-white transition-all shadow-sm ring-1 ring-gray-950/5"
-              >
-                <Globe className="w-4 h-4 text-violet-500" />
-                View examples
-              </motion.button>
-            </motion.div>
-
-            {/* Social proof strip */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="flex flex-col sm:flex-row items-center gap-4 text-sm text-gray-500 mb-14"
-            >
-              <div className="flex -space-x-2">
-                {['AK', 'MC', 'SL', 'RB', 'JW'].map((init, i) => (
-                  <div
-                    key={i}
-                    className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white"
-                    style={{ background: `hsl(${240 + i * 40}, 70%, 60%)` }}
-                  >
-                    {init}
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="flex gap-0.5">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />)}
-                </div>
-                <span className="font-semibold text-gray-700">4.9</span>
-                <span>· Loved by 2,400+ creators</span>
-              </div>
-            </motion.div>
-
-            {/* Hero mockup with floating badges */}
-            <motion.div
-              initial={{ opacity: 0, y: 48 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-5xl relative"
-            >
-              {/* Floating badges — overlaid inside the mockup bounds */}
-              <FloatingBadge className="top-12 left-2 text-emerald-700 z-20">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                Site published
-              </FloatingBadge>
-              <FloatingBadge className="bottom-24 right-2 text-violet-700 z-20">
-                <Zap className="w-4 h-4 text-amber-500" />
-                Generated in 38s
-              </FloatingBadge>
-
-              {/* Fade overlay at bottom */}
-              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#f8f7f2] to-transparent z-10 rounded-b-[1.75rem]" />
-
-              <BrowserMockup />
-            </motion.div>
-          </div>
-        </section>
-
-        {/* ── Stats Bar ── */}
-        <motion.section
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-80px' }}
-          variants={containerVariants}
-          className="max-w-6xl mx-auto px-6 py-14"
+      <motion.div
+        id="top"
+        variants={stagger}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 mt-16 max-w-[760px] sm:mt-20 lg:mt-24"
+      >
+        <motion.div
+          variants={fadeUp}
+          className="mb-7 inline-flex items-center gap-2 rounded-full bg-white/82 px-4 py-2 text-sm font-semibold text-[#4d5774] shadow-[0_12px_30px_rgba(80,74,170,0.1)] backdrop-blur"
         >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-[2rem] border border-white/80 bg-white/45 p-2 shadow-sm ring-1 ring-gray-950/5 backdrop-blur-xl">
-            {[
-              { value: '2,400+', label: 'Sites created' },
-              { value: '<60s', label: 'Avg. generation time' },
-              { value: '100%', label: 'Unique designs' },
-              { value: '4.9★', label: 'User rating' },
-            ].map((stat, i) => (
-              <motion.div
-                key={i}
-                variants={itemVariants}
-                className="rounded-[1.4rem] bg-white/80 p-6 text-center"
-              >
-                <p className="text-3xl font-bold tracking-tight text-gray-950 mb-1">{stat.value}</p>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
+          <Sparkles className="h-4 w-4 text-[#665cf6]" />
+          AI websites for portfolios, founders, and solo brands
+          <span className="hidden rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-600 sm:inline">Live</span>
+        </motion.div>
 
-        {/* ── Bento Features ── */}
-        <section className="max-w-7xl mx-auto px-6 py-16">
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={containerVariants}
-            className="text-center mb-14"
+        <motion.h1
+          variants={fadeUp}
+          className="max-w-[690px] text-[48px] font-semibold leading-[1.04] tracking-normal text-[#101936] sm:text-[68px] lg:text-[82px]"
+        >
+          Launch a polished web presence in minutes.
+        </motion.h1>
+
+        <motion.p
+          variants={fadeUp}
+          className="mt-6 max-w-[560px] text-lg font-medium leading-8 text-[#59647f] sm:text-xl"
+        >
+          BaseStack turns a short conversation into a custom site with refined copy, crisp visual direction, hosting, analytics, and export-ready code.
+        </motion.p>
+
+        <motion.div variants={fadeUp} className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={onStart}
+            className="inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-[#665cf6] px-7 text-base font-semibold text-white shadow-[0_16px_34px_rgba(102,92,246,0.28)] transition hover:bg-[#574df0]"
           >
-            <motion.p variants={itemVariants} className="text-sm font-semibold text-violet-600 tracking-widest uppercase mb-4">Features</motion.p>
-            <motion.h2 variants={itemVariants} className="text-4xl sm:text-5xl font-semibold tracking-tight mb-5">
-              Everything you need,<br />nothing you don't.
-            </motion.h2>
-            <motion.p variants={itemVariants} className="text-gray-600 text-lg max-w-xl mx-auto">
-              Skip the design decisions. BaseStack handles it all — from layout to copy to code.
-            </motion.p>
-          </motion.div>
-
-          {/* Bento Grid */}
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={containerVariants}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+            Build my site
+            <WandSparkles className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToSection('features')}
+            className="inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-white/86 px-7 text-base font-semibold text-[#27304d] shadow-[0_12px_28px_rgba(35,45,80,0.08)] backdrop-blur transition hover:text-[#6258ff]"
           >
-            {/* Large card - spans 2 cols */}
-            <motion.div variants={itemVariants} className="md:col-span-2">
-              <BentoCard
-                icon={<Palette className="w-5 h-5" />}
-                accent="bg-violet-500"
-                title="Unique every single time"
-                description="Unlike template builders, BaseStack generates layouts, color palettes, typography, and copy completely from scratch — tailored to your personality and goals."
-                className="h-full"
-              >
-                {/* Color palette preview */}
-                <div className="flex gap-2">
-                  {['#6d28d9', '#2563eb', '#10b981', '#f59e0b', '#ef4444'].map(c => (
-                    <motion.div
-                      key={c}
-                      whileHover={{ scale: 1.15, y: -2 }}
-                      className="w-8 h-8 rounded-full shadow-md cursor-pointer"
-                      style={{ background: c }}
-                    />
-                  ))}
-                  <div className="w-8 h-8 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 text-xs">+</div>
-                </div>
-              </BentoCard>
-            </motion.div>
+            See what it builds
+            <Globe2 className="h-5 w-5" />
+          </button>
+        </motion.div>
 
-            {/* Tall card */}
-            <motion.div variants={itemVariants} className="row-span-1">
-              <BentoCard
-                icon={<Zap className="w-5 h-5" />}
-                accent="bg-amber-500"
-                title="Lightning fast"
-                description="From first question to live site in under 60 seconds. No waiting, no loading bars — just instant results."
-                className="h-full"
-              >
-                {/* Speed bar */}
-                <div className="space-y-2">
-                  {[
-                    { label: 'Generate design', pct: 95, color: 'bg-amber-500' },
-                    { label: 'Write copy', pct: 80, color: 'bg-amber-400' },
-                    { label: 'Build code', pct: 70, color: 'bg-amber-300' },
-                  ].map(b => (
-                    <div key={b.label}>
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>{b.label}</span><span>{b.pct}%</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <motion.div
-                          className={`h-full ${b.color} rounded-full`}
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${b.pct}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </BentoCard>
-            </motion.div>
+        <motion.div variants={fadeUp} className="mt-10 grid max-w-[610px] gap-3 sm:grid-cols-3">
+          <Metric value="38s" label="average first draft" />
+          <Metric value="1 click" label="publish or export" />
+          <Metric value="24/7" label="AI editing flow" />
+        </motion.div>
+      </motion.div>
 
-            {/* Regular card */}
-            <motion.div variants={itemVariants}>
-              <BentoCard
-                icon={<Code2 className="w-5 h-5" />}
-                accent="bg-blue-500"
-                title="Production-ready code"
-                description="Clean HTML + Tailwind CSS. Host it anywhere, or export and tweak it yourself."
-                className="h-full"
-              >
-                <div className="bg-gray-950 rounded-xl p-3 font-mono text-xs text-emerald-400 leading-relaxed">
-                  <span className="text-gray-500">// Generated for you</span><br />
-                  <span className="text-blue-400">const</span> site = <span className="text-amber-300">generate</span>(<span className="text-violet-400">yourData</span>);<br />
-                  site.<span className="text-blue-400">publish</span>();
-                </div>
-              </BentoCard>
-            </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, delay: 0.45 }}
+        className="absolute bottom-8 left-5 right-5 z-10 grid gap-3 sm:left-8 sm:right-auto sm:w-[480px] sm:grid-cols-2 lg:left-auto lg:right-12 lg:w-[520px]"
+      >
+        <FloatingNote icon={<CheckCircle2 className="h-5 w-5" />} title="Site published" text="Custom domain ready" tone="green" />
+        <FloatingNote icon={<MessageCircle className="h-5 w-5" />} title="AI edit applied" text="Updated hero copy" tone="violet" />
+      </motion.div>
+    </section>
+  );
+}
 
-            {/* Regular card */}
-            <motion.div variants={itemVariants}>
-              <BentoCard
-                icon={<MousePointer2 className="w-5 h-5" />}
-                accent="bg-pink-500"
-                title="Tweak with AI chat"
-                description="Not happy with something? Just describe what you want changed — the AI edits it live."
-                className="h-full"
-              >
-                <div className="flex gap-2 flex-wrap">
-                  {['Change colors', 'Add a blog', 'Bolder fonts', 'Dark mode'].map(tag => (
-                    <span key={tag} className="px-3 py-1.5 bg-pink-50 text-pink-700 border border-pink-100 rounded-full text-xs font-medium">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </BentoCard>
-            </motion.div>
-
-            {/* Regular card */}
-            <motion.div variants={itemVariants}>
-              <BentoCard
-                icon={<Share2 className="w-5 h-5" />}
-                accent="bg-emerald-500"
-                title="One-click publish"
-                description="Publish with one click and get a custom share link instantly. Keep it hosted on BaseStack, or export the code whenever you want."
-                className="h-full"
-              >
-                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
-                  <Globe className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span className="text-xs text-emerald-700 font-medium truncate">alexchen.basestack.app</span>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 ml-auto" />
-                </div>
-              </BentoCard>
-            </motion.div>
-          </motion.div>
-        </section>
-
-        {/* ── How It Works ── */}
-        <section className="max-w-7xl mx-auto px-6 py-20">
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={containerVariants}
-            className="text-center mb-14"
-          >
-            <motion.p variants={itemVariants} className="text-sm font-semibold text-violet-600 tracking-widest uppercase mb-4">Process</motion.p>
-            <motion.h2 variants={itemVariants} className="text-4xl sm:text-5xl font-semibold tracking-tight mb-5">
-              Three steps to launch.
-            </motion.h2>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={containerVariants}
-            className="grid grid-cols-1 md:grid-cols-3 gap-5 relative"
-          >
-            {/* Connector */}
-            <div className="hidden md:block absolute top-1/2 left-[22%] right-[22%] h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent -translate-y-1/2" />
-
-            <motion.div variants={itemVariants}>
-              <StepCard
-                num="1"
-                icon={<span className="text-2xl font-bold text-gray-700">1</span>}
-                title="Tell us about you"
-                desc="Answer a short set of conversational questions about your background, projects, and goals. No forms — just a chat."
-              />
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <StepCard
-                num="2"
-                icon={<Wand2 className="w-8 h-8" />}
-                title="AI builds your site"
-                desc="Our AI designs, writes, and codes a completely custom site from scratch — no templates, ever."
-                active
-              />
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <StepCard
-                num="3"
-                icon={<span className="text-2xl font-bold text-gray-700">3</span>}
-                title="Publish & share"
-                desc="One click to deploy. Get a shareable link instantly, export the clean code, or do both."
-              />
-            </motion.div>
-          </motion.div>
-        </section>
-
-        {/* ── Testimonials ── */}
-        <section className="max-w-7xl mx-auto px-6 py-16">
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={containerVariants}
-            className="text-center mb-14"
-          >
-            <motion.p variants={itemVariants} className="text-sm font-semibold text-violet-600 tracking-widest uppercase mb-4">Testimonials</motion.p>
-            <motion.h2 variants={itemVariants} className="text-4xl sm:text-5xl font-semibold tracking-tight">
-              Trusted by creators.
-            </motion.h2>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={containerVariants}
-            className="grid grid-cols-1 md:grid-cols-3 gap-5"
-          >
-            <motion.div variants={itemVariants}>
-              <Testimonial
-                quote="I had a portfolio live in 2 minutes. It looks nothing like any template I've ever seen — it feels genuinely mine."
-                name="Alex Chen"
-                title="Product Designer at Linear"
-                avatar="AC"
-              />
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <Testimonial
-                quote="The AI nailed my whole vibe without me having to explain typography or color theory. Absolutely wild."
-                name="Maya Rodriguez"
-                title="Indie developer & maker"
-                avatar="MR"
-              />
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <Testimonial
-                quote="Sent the link to a recruiter within 5 minutes of starting. Got an interview the next day."
-                name="Sam Liu"
-                title="Frontend engineer"
-                avatar="SL"
-              />
-            </motion.div>
-          </motion.div>
-        </section>
-
-        {/* ── Pricing ── */}
-        <section id="pricing" className="max-w-7xl mx-auto px-6 py-20">
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={containerVariants}
-            className="text-center mb-14"
-          >
-            <motion.p variants={itemVariants} className="text-sm font-semibold text-violet-600 tracking-widest uppercase mb-4">Pricing</motion.p>
-            <motion.h2 variants={itemVariants} className="text-4xl sm:text-5xl font-semibold tracking-tight mb-5">
-              Simple, honest pricing.
-            </motion.h2>
-            <motion.p variants={itemVariants} className="text-gray-600 text-lg max-w-xl mx-auto">
-              Start free, upgrade when you're ready. No hidden fees, cancel anytime.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={containerVariants}
-            className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start"
-          >
-            {/* Free */}
-            <motion.div variants={itemVariants}>
-              <div className="relative bg-white/90 backdrop-blur-sm rounded-3xl border border-white ring-1 ring-gray-950/5 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-gray-950/10 transition-shadow">
-                <div className="h-1.5 bg-gradient-to-r from-gray-400 to-gray-600" />
-                <div className="p-8">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Free</span>
-                  </div>
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-4xl font-bold tracking-tight text-gray-900">$0</span>
-                    <span className="text-gray-400 text-sm">forever</span>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-8">For trying BaseStack and getting started.</p>
-                  <ul className="space-y-3 mb-8">
-                    {[
-                      '3 AI operations / month',
-                      '1 website',
-                      'HTML + Tailwind site generation',
-                      'Basic publishing controls',
-                      'BaseStack watermark included',
-                    ].map(f => (
-                      <li key={f} className="flex items-start gap-3 text-sm text-gray-700">
-                        <Check className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={onStart}
-                    className="w-full py-3 rounded-xl text-sm font-semibold bg-gray-950 text-white hover:bg-gray-800 transition-colors"
-                  >
-                    Get started free
-                  </motion.button>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Pro */}
-            <motion.div variants={itemVariants}>
-              <div className="relative bg-white/90 backdrop-blur-sm rounded-3xl border border-indigo-100 ring-2 ring-indigo-300 ring-offset-2 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-indigo-950/10 transition-shadow">
-                <div className="h-1.5 bg-gradient-to-r from-indigo-500 to-blue-600" />
-                <div className="p-8">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Zap className="w-5 h-5 text-indigo-600" />
-                    <span className="text-sm font-semibold text-indigo-600 uppercase tracking-wide">Pro</span>
-                  </div>
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-4xl font-bold tracking-tight text-gray-900">$9</span>
-                    <span className="text-gray-400 text-sm">/month</span>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-8">For individuals &amp; small projects.</p>
-                  <ul className="space-y-3 mb-8">
-                    {[
-                      '20 AI operations / month',
-                      'Up to 5 websites',
-                      'Portfolio analytics dashboard',
-                      'Premium publishing controls',
-                      'Next.js, React &amp; Tailwind export',
-                      'Remove BaseStack watermark',
-                      'Email support',
-                    ].map(f => (
-                      <li key={f} className="flex items-start gap-3 text-sm text-gray-700">
-                        <Check className="w-4 h-4 mt-0.5 shrink-0 text-indigo-600" />
-                        <span dangerouslySetInnerHTML={{ __html: f }} />
-                      </li>
-                    ))}
-                    {/* Highlighted hosting feature */}
-                    <li className="flex items-start gap-3 text-sm">
-                      <Server className="w-4 h-4 mt-0.5 shrink-0 text-indigo-600" />
-                      <span className="font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg">Access to our fastest hosting servers</span>
-                    </li>
-                  </ul>
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={onStart}
-                    className="w-full py-3 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
-                  >
-                    Upgrade to Pro
-                  </motion.button>
-                  <p className="text-center text-xs text-gray-400 mt-3">Secure checkout via Stripe · Cancel anytime</p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Studio */}
-            <motion.div variants={itemVariants}>
-              <div className="relative bg-white/90 backdrop-blur-sm rounded-3xl border border-violet-100 ring-2 ring-violet-400 ring-offset-2 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-violet-950/10 transition-shadow">
-                <div className="h-1.5 bg-gradient-to-r from-violet-600 to-purple-700" />
-                {/* Most Popular badge */}
-                <div className="absolute top-5 right-5">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-violet-100 text-violet-700">
-                    <Sparkles className="w-3 h-3" />
-                    Most Popular
-                  </span>
-                </div>
-                <div className="p-8">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Layers className="w-5 h-5 text-violet-600" />
-                    <span className="text-sm font-semibold text-violet-600 uppercase tracking-wide">Studio</span>
-                  </div>
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span className="text-4xl font-bold tracking-tight text-gray-900">$29</span>
-                    <span className="text-gray-400 text-sm">/month</span>
-                  </div>
-                  <p className="text-sm text-gray-500 mb-8">For power users and agencies.</p>
-                  <ul className="space-y-3 mb-8">
-                    {[
-                      '50 AI operations / month',
-                      'Unlimited websites',
-                      'Advanced portfolio analytics',
-                      'Advanced publishing controls',
-                      'Next.js, React &amp; Tailwind export',
-                      'Remove BaseStack watermark',
-                      'Priority support',
-                      'Early access to new features',
-                    ].map(f => (
-                      <li key={f} className="flex items-start gap-3 text-sm text-gray-700">
-                        <Check className="w-4 h-4 mt-0.5 shrink-0 text-violet-600" />
-                        <span dangerouslySetInnerHTML={{ __html: f }} />
-                      </li>
-                    ))}
-                    {/* Highlighted hosting feature */}
-                    <li className="flex items-start gap-3 text-sm">
-                      <Server className="w-4 h-4 mt-0.5 shrink-0 text-violet-600" />
-                      <span className="font-medium text-violet-700 bg-violet-50 px-2 py-0.5 rounded-lg">Access to our fastest hosting servers</span>
-                    </li>
-                  </ul>
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={onStart}
-                    className="w-full py-3 rounded-xl text-sm font-semibold bg-violet-600 text-white hover:bg-violet-700 transition-colors"
-                  >
-                    Upgrade to Studio
-                  </motion.button>
-                  <p className="text-center text-xs text-gray-400 mt-3">Secure checkout via Stripe · Cancel anytime</p>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        </section>
-
-        {/* ── CTA ── */}
-        <section className="max-w-5xl mx-auto px-6 py-16 pb-24">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-80px' }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="relative bg-gray-950 rounded-[2.5rem] p-12 sm:p-20 text-center text-white overflow-hidden shadow-2xl shadow-gray-950/20"
-          >
-            {/* Background effects */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(124,58,237,0.24),transparent_38%),linear-gradient(315deg,rgba(14,165,233,0.18),transparent_42%)]" />
-              {/* Grid */}
-              <div
-                className="absolute inset-0 opacity-[0.06]"
-                style={{
-                  backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)',
-                  backgroundSize: '40px 40px'
-                }}
-              />
-            </div>
-
-            <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-sm font-medium text-gray-300 mb-8">
-                <Layers className="w-4 h-4 text-violet-400" />
-                Free to start — no credit card needed
-              </div>
-              <h2 className="text-4xl sm:text-6xl font-semibold tracking-tight mb-6">
-                Ready to stand out?
-              </h2>
-              <p className="text-lg text-gray-400 mb-10 max-w-xl mx-auto">
-                Stop spending hours tweaking templates. Let AI build something that actually feels like <em>you</em>.
-              </p>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={onStart}
-                className="inline-flex items-center gap-2 px-9 py-4 bg-white text-gray-900 rounded-full text-base font-semibold hover:bg-gray-100 transition-all shadow-2xl shadow-black/20"
-              >
-                Start building now
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-            </div>
-          </motion.div>
-        </section>
-      </main>
-
-      {/* ── Footer ── */}
-      <footer className="border-t border-gray-100 bg-white/50 backdrop-blur-sm relative z-10">
-        <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 font-bold tracking-tight text-gray-900">
-            <Logo className="w-6 h-6" />
-            <span>BaseStack</span>
-          </div>
-          <p className="text-xs text-gray-400">© 2026 BaseStack. All rights reserved.</p>
-          <div className="flex gap-6 text-sm text-gray-500">
-            <a href="#" className="hover:text-gray-900 transition-colors">Privacy</a>
-            <a href="#" className="hover:text-gray-900 transition-colors">Terms</a>
-            <a href="#" className="hover:text-gray-900 transition-colors">Twitter</a>
-          </div>
-        </div>
-      </footer>
+function Metric({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-xl bg-white/78 px-5 py-4 shadow-[0_14px_34px_rgba(55,65,110,0.08)] backdrop-blur">
+      <p className="text-2xl font-semibold text-[#101936]">{value}</p>
+      <p className="mt-1 text-sm font-semibold text-[#6b748f]">{label}</p>
     </div>
+  );
+}
+
+function FloatingNote({
+  icon,
+  title,
+  text,
+  tone,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+  tone: 'green' | 'violet';
+}) {
+  const toneClass = tone === 'green' ? 'bg-emerald-50 text-emerald-600' : 'bg-[#f0edff] text-[#665cf6]';
+
+  return (
+    <div className="flex items-center gap-4 rounded-xl bg-white/92 p-4 shadow-[0_18px_44px_rgba(87,82,185,0.15)] backdrop-blur">
+      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-lg ${toneClass}`}>{icon}</span>
+      <span>
+        <span className="block text-sm font-semibold text-[#101936]">{title}</span>
+        <span className="mt-1 block text-xs font-semibold text-[#7a84a0]">{text}</span>
+      </span>
+    </div>
+  );
+}
+
+function TrustedStrip() {
+  return (
+    <section className="bg-white px-5 py-10 sm:px-8 lg:px-12">
+      <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-6 lg:flex-row">
+        <p className="text-sm font-semibold text-[#68738e]">Trusted by creators and teams at</p>
+        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-[#606982]">
+          {TRUSTED_BY.map((brand) => (
+            <span key={brand} className="text-xl font-semibold">
+              {brand}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeatureShowcase() {
+  return (
+    <section id="features" className="bg-white px-5 py-20 sm:px-8 lg:px-12">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: '-80px' }}
+        className="mx-auto max-w-[1280px]"
+      >
+        <SectionIntro eyebrow="What it makes" title="A full web presence, not another blank canvas." text="The builder chooses layout, voice, visuals, publishing defaults, and code structure so you can start from a polished result." />
+
+        <div className="mt-12 grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
+          <motion.div variants={fadeUp} className="overflow-hidden rounded-2xl bg-[#f7f8ff] shadow-[0_20px_60px_rgba(42,52,92,0.1)]">
+            <img src={styleBoard} alt="A collage of generated BaseStack website layouts and interface modules." className="h-full min-h-[420px] w-full object-cover" />
+          </motion.div>
+
+          <motion.div variants={stagger} className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
+            <FeatureCard
+              icon={<Palette className="h-6 w-6" />}
+              title="Tasteful visual direction"
+              text="Color, type, spacing, and section rhythm are selected as one cohesive system."
+              tone="violet"
+            />
+            <FeatureCard
+              icon={<Code2 className="h-6 w-6" />}
+              title="Clean generated code"
+              text="Export React and Tailwind when you want full ownership beyond hosted publishing."
+              tone="blue"
+            />
+            <FeatureCard
+              icon={<MousePointer2 className="h-6 w-6" />}
+              title="Natural language edits"
+              text="Ask for sharper copy, a calmer palette, new sections, or a different audience."
+              tone="green"
+            />
+          </motion.div>
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+function SectionIntro({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
+  return (
+    <div className="max-w-[760px]">
+      <motion.p variants={fadeUp} className="text-sm font-bold uppercase tracking-[0.14em] text-[#665cf6]">
+        {eyebrow}
+      </motion.p>
+      <motion.h2 variants={fadeUp} className="mt-4 text-4xl font-semibold leading-[1.08] tracking-normal text-[#101936] sm:text-5xl">
+        {title}
+      </motion.h2>
+      <motion.p variants={fadeUp} className="mt-5 text-lg font-medium leading-8 text-[#59647f]">
+        {text}
+      </motion.p>
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, text, tone }: { icon: React.ReactNode; title: string; text: string; tone: 'violet' | 'blue' | 'green' }) {
+  const toneClass = {
+    violet: 'bg-[#f0edff] text-[#665cf6]',
+    blue: 'bg-[#eef7ff] text-[#3288e8]',
+    green: 'bg-[#ecfaf4] text-[#1ca96f]',
+  }[tone];
+
+  return (
+    <motion.div variants={fadeUp} className="rounded-xl bg-white p-6 shadow-[0_16px_42px_rgba(43,53,90,0.08)]">
+      <span className={`grid h-12 w-12 place-items-center rounded-xl ${toneClass}`}>{icon}</span>
+      <h3 className="mt-5 text-xl font-semibold text-[#101936]">{title}</h3>
+      <p className="mt-3 text-sm font-medium leading-6 text-[#65708c]">{text}</p>
+    </motion.div>
+  );
+}
+
+function BuildFlow({ onStart }: { onStart: () => void }) {
+  return (
+    <section id="process" className="bg-[#fbfcff] px-5 py-20 sm:px-8 lg:px-12">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: '-80px' }}
+        className="mx-auto max-w-[1280px]"
+      >
+        <SectionIntro eyebrow="How it works" title="From quick answers to a live site." text="A guided flow gathers the useful context, then BaseStack drafts, tunes, and publishes your site without making you wrestle a template." />
+
+        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+          <FlowStep count="1" icon={<Bot className="h-7 w-7" />} title="Describe your goals" text="Tell BaseStack who you are, what you do, and what the site should help people understand." />
+          <FlowStep count="2" icon={<WandSparkles className="h-7 w-7" />} title="Review the first draft" text="Get structure, copy, styling, and imagery composed into a finished direction." active />
+          <FlowStep count="3" icon={<Rocket className="h-7 w-7" />} title="Publish and grow" text="Ship with hosting, analytics, share links, and export controls ready when you need them." />
+        </div>
+
+        <motion.div variants={fadeUp} className="mt-10 flex flex-col items-start gap-4 rounded-2xl bg-[#f3f1ff] p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-[#665cf6] shadow-[0_12px_28px_rgba(88,80,190,0.12)]">
+              <Zap className="h-6 w-6" />
+            </span>
+            <div>
+              <h3 className="text-lg font-semibold text-[#101936]">Want a faster first draft?</h3>
+              <p className="mt-1 text-sm font-semibold leading-6 text-[#65708c]">Start with LinkedIn, GitHub, or a short prompt and let the builder fill in the structure.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onStart}
+            className="inline-flex h-12 shrink-0 items-center gap-2 rounded-lg bg-[#665cf6] px-5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(102,92,246,0.25)] transition hover:bg-[#574df0]"
+          >
+            Start now
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </motion.div>
+      </motion.div>
+    </section>
+  );
+}
+
+function FlowStep({ count, icon, title, text, active = false }: { count: string; icon: React.ReactNode; title: string; text: string; active?: boolean }) {
+  return (
+    <motion.div
+      variants={fadeUp}
+      className={`relative overflow-hidden rounded-2xl p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] ${
+        active ? 'bg-[#111A36] text-white' : 'bg-white text-[#101936]'
+      }`}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <span className={`grid h-14 w-14 place-items-center rounded-xl ${active ? 'bg-white/10 text-white' : 'bg-[#f0edff] text-[#665cf6]'}`}>{icon}</span>
+        <span className={`grid h-8 w-8 place-items-center rounded-full text-sm font-bold ${active ? 'bg-[#665cf6] text-white' : 'bg-[#eef1fa] text-[#65708c]'}`}>{count}</span>
+      </div>
+      <h3 className="mt-7 text-xl font-semibold">{title}</h3>
+      <p className={`mt-3 text-sm font-medium leading-6 ${active ? 'text-[#c9cfe0]' : 'text-[#65708c]'}`}>{text}</p>
+    </motion.div>
+  );
+}
+
+function Testimonials() {
+  return (
+    <section className="bg-white px-5 py-20 sm:px-8 lg:px-12">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: '-80px' }}
+        className="mx-auto max-w-[1280px]"
+      >
+        <SectionIntro eyebrow="Proof" title="Sites that feel finished from the first draft." text="Creators use BaseStack when they want the speed of AI without sacrificing taste, polish, or ownership." />
+        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+          <Testimonial quote="I had a portfolio live before my coffee got cold. The design felt custom, not like another dressed-up template." name="Alex Chen" role="Product designer" initials="AC" />
+          <Testimonial quote="It understood the audience I was aiming for and gave me a site I could actually send to investors the same day." name="Maya Rodriguez" role="Founder" initials="MR" />
+          <Testimonial quote="The editing flow is the best part. I just asked for sharper positioning and it rebuilt the section cleanly." name="Sam Liu" role="Frontend engineer" initials="SL" />
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+function Testimonial({ quote, name, role, initials }: { quote: string; name: string; role: string; initials: string }) {
+  return (
+    <motion.article variants={fadeUp} className="rounded-2xl bg-white p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)]">
+      <div className="flex gap-1 text-[#ffb936]">
+        {[0, 1, 2, 3, 4].map((item) => (
+          <Star key={item} className="h-4 w-4 fill-current" />
+        ))}
+      </div>
+      <p className="mt-6 text-base font-medium leading-7 text-[#384361]">"{quote}"</p>
+      <div className="mt-7 flex items-center gap-4">
+        <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#f0edff] text-sm font-bold text-[#665cf6]">{initials}</span>
+        <span>
+          <span className="block text-sm font-semibold text-[#101936]">{name}</span>
+          <span className="mt-1 block text-xs font-semibold text-[#7d88a4]">{role}</span>
+        </span>
+      </div>
+    </motion.article>
+  );
+}
+
+function Pricing({ onStart }: { onStart: () => void }) {
+  return (
+    <section id="pricing" className="bg-[#fbfcff] px-5 py-20 sm:px-8 lg:px-12">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: '-80px' }}
+        className="mx-auto max-w-[1280px]"
+      >
+        <SectionIntro eyebrow="Pricing" title="Start free, upgrade when you need more room." text="Keep testing ideas at no cost, then unlock more websites, AI operations, analytics, and premium publishing." />
+
+        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+          <PlanCard
+            name="Free"
+            price="$0"
+            note="For trying BaseStack."
+            cta="Get started free"
+            onStart={onStart}
+            features={['3 AI operations / month', '1 website', 'HTML + Tailwind generation', 'Basic publishing controls', 'BaseStack watermark']}
+          />
+          <PlanCard
+            name="Pro"
+            price="$9"
+            suffix="/month"
+            note="For individuals and small projects."
+            cta="Upgrade to Pro"
+            onStart={onStart}
+            featured
+            features={['20 AI operations / month', 'Up to 5 websites', 'Portfolio analytics dashboard', 'React + Tailwind export', 'Remove BaseStack watermark', 'Fast hosting servers']}
+          />
+          <PlanCard
+            name="Studio"
+            price="$29"
+            suffix="/month"
+            note="For power users and agencies."
+            cta="Upgrade to Studio"
+            onStart={onStart}
+            features={['50 AI operations / month', 'Unlimited websites', 'Advanced analytics', 'Priority support', 'Early access features', 'Fast hosting servers']}
+          />
+        </div>
+      </motion.div>
+    </section>
+  );
+}
+
+function PlanCard({
+  name,
+  price,
+  suffix,
+  note,
+  cta,
+  features,
+  featured = false,
+  onStart,
+}: {
+  name: string;
+  price: string;
+  suffix?: string;
+  note: string;
+  cta: string;
+  features: string[];
+  featured?: boolean;
+  onStart: () => void;
+}) {
+  return (
+    <motion.article
+      variants={fadeUp}
+      className={`relative rounded-2xl bg-white p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] ${
+        featured ? 'ring-2 ring-[#d7d3ff]' : ''
+      }`}
+    >
+      {featured && (
+        <span className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-full bg-[#f0edff] px-3 py-1 text-xs font-bold text-[#665cf6]">
+          <Sparkles className="h-3.5 w-3.5" />
+          Popular
+        </span>
+      )}
+      <div className="flex items-center gap-3">
+        <span className={`grid h-11 w-11 place-items-center rounded-xl ${featured ? 'bg-[#665cf6] text-white' : 'bg-[#f0edff] text-[#665cf6]'}`}>
+          {featured ? <Zap className="h-5 w-5" /> : <Layers className="h-5 w-5" />}
+        </span>
+        <h3 className="text-xl font-semibold text-[#101936]">{name}</h3>
+      </div>
+      <div className="mt-7 flex items-end gap-1">
+        <span className="text-5xl font-semibold text-[#101936]">{price}</span>
+        {suffix && <span className="pb-2 text-sm font-semibold text-[#7d88a4]">{suffix}</span>}
+      </div>
+      <p className="mt-3 text-sm font-semibold leading-6 text-[#65708c]">{note}</p>
+      <ul className="mt-7 space-y-3">
+        {features.map((feature) => (
+          <li key={feature} className="flex items-start gap-3 text-sm font-semibold leading-6 text-[#3b4665]">
+            <Check className={`mt-1 h-4 w-4 shrink-0 ${featured ? 'text-[#665cf6]' : 'text-emerald-500'}`} />
+            {feature}
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={onStart}
+        className={`mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition ${
+          featured
+            ? 'bg-[#665cf6] text-white shadow-[0_12px_28px_rgba(102,92,246,0.25)] hover:bg-[#574df0]'
+            : 'bg-white text-[#27304d] shadow-[0_10px_24px_rgba(35,45,80,0.08)] hover:text-[#6258ff]'
+        }`}
+      >
+        {cta}
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </motion.article>
+  );
+}
+
+function FinalCta({ onStart }: { onStart: () => void }) {
+  return (
+    <section className="bg-white px-5 py-20 sm:px-8 lg:px-12">
+      <div className="mx-auto max-w-[1280px] overflow-hidden rounded-[24px] bg-[#111A36] px-7 py-12 text-white shadow-[0_24px_70px_rgba(17,26,54,0.22)] sm:px-10 lg:px-14">
+        <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div>
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-[#d8ddf0]">
+              <ShieldCheck className="h-4 w-4 text-[#9f98ff]" />
+              Free to start, no credit card needed
+            </div>
+            <h2 className="max-w-[720px] text-4xl font-semibold leading-[1.08] tracking-normal sm:text-5xl">
+              Give your next link a site that feels considered.
+            </h2>
+            <p className="mt-5 max-w-[640px] text-lg font-medium leading-8 text-[#c9cfe0]">
+              Start with a few answers. Leave with a shareable site, a stronger story, and code you can own.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onStart}
+            className="inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-white px-7 text-base font-semibold text-[#101936] shadow-[0_16px_34px_rgba(0,0,0,0.22)] transition hover:bg-[#f3f5fb]"
+          >
+            Start building
+            <Rocket className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="bg-white px-5 py-8 sm:px-8 lg:px-12">
+      <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-5 text-sm font-semibold text-[#75809b] md:flex-row">
+        <div className="flex items-center gap-3 text-[#101936]">
+          <Logo className="h-7 w-7 text-[#665cf6]" />
+          <span>BaseStack</span>
+        </div>
+        <p>&copy; 2026 BaseStack. All rights reserved.</p>
+        <div className="flex items-center gap-6">
+          <a href="#" className="transition hover:text-[#6258ff]">Privacy</a>
+          <a href="#" className="transition hover:text-[#6258ff]">Terms</a>
+          <a href="mailto:support@basestack.ai" className="transition hover:text-[#6258ff]">Support</a>
+        </div>
+      </div>
+    </footer>
   );
 }
