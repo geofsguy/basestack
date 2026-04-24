@@ -428,7 +428,7 @@ export default function Settings() {
         />
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-12 relative z-10">
+      <div className="relative z-10 mx-auto max-w-6xl px-6 py-12 xl:max-w-[1360px] 2xl:max-w-[1580px] 2xl:px-10">
         {/* Header */}
         <header className="flex justify-between items-center mb-12">
           <div className="flex items-center space-x-3">
@@ -441,7 +441,7 @@ export default function Settings() {
           </Link>
         </header>
 
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex flex-col gap-8 md:flex-row xl:gap-10">
           {/* Sidebar */}
           <aside className="w-full md:w-64 flex-shrink-0">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-3">Settings</h2>
@@ -477,7 +477,7 @@ export default function Settings() {
           </aside>
 
           {/* Main */}
-          <main className="flex-1">
+          <main className="min-w-0 flex-1">
             {/* ── Profile Tab ────────────────────────────────────────────── */}
             {activeTab === 'profile' && (
               <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
