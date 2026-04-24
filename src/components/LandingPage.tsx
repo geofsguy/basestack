@@ -513,8 +513,8 @@ function PlanCard({
         type="button"
         onClick={onStart}
         className={`mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition ${featured
-            ? 'bg-[#665cf6] text-white shadow-[0_12px_28px_rgba(102,92,246,0.25)] hover:bg-[#574df0]'
-            : 'bg-white text-[#27304d] shadow-[0_10px_24px_rgba(35,45,80,0.08)] hover:text-[#6258ff]'
+          ? 'bg-[#665cf6] text-white shadow-[0_12px_28px_rgba(102,92,246,0.25)] hover:bg-[#574df0]'
+          : 'bg-white text-[#27304d] shadow-[0_10px_24px_rgba(35,45,80,0.08)] hover:text-[#6258ff]'
           }`}
       >
         {cta}
