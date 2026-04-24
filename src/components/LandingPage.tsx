@@ -57,14 +57,14 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
 
 function Hero({ onStart }: { onStart: () => void }) {
   return (
-    <section className="relative overflow-hidden bg-[#f4f5fe] px-5 pb-16 pt-5 sm:px-8 lg:min-h-[760px] lg:px-12 lg:pb-20">
+    <section className="relative overflow-hidden bg-[#f4f5fe] px-5 pb-16 pt-5 sm:px-8 lg:min-h-[760px] lg:px-12 lg:pb-20 2xl:min-h-[860px] 2xl:px-16">
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.92)_0%,rgba(244,245,254,0.62)_44%,#f4f5fe_100%)]" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#f4f5fe] to-transparent" />
 
       <motion.img
         src={heroShowcase}
         alt=""
-        className="pointer-events-none absolute right-[-46px] top-[104px] hidden w-[58vw] max-w-[900px] rounded-[28px] object-contain opacity-100 shadow-[0_24px_80px_rgba(81,91,145,0.16)] lg:block xl:right-2"
+        className="pointer-events-none absolute right-[-46px] top-[104px] hidden w-[58vw] max-w-[900px] rounded-[28px] object-contain opacity-100 shadow-[0_24px_80px_rgba(81,91,145,0.16)] lg:block xl:right-2 2xl:right-16 2xl:top-[118px] 2xl:w-[57vw] 2xl:max-w-[1180px]"
         initial={{ opacity: 0, scale: 1.04, y: 28 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
@@ -117,7 +117,7 @@ function Hero({ onStart }: { onStart: () => void }) {
         variants={stagger}
         initial="hidden"
         animate="show"
-        className="relative z-10 mt-16 max-w-[760px] sm:mt-20 lg:mt-24"
+        className="relative z-10 mt-16 max-w-[760px] sm:mt-20 lg:mt-24 2xl:mt-28 2xl:max-w-[860px]"
       >
         <motion.div
           variants={fadeUp}
@@ -130,14 +130,14 @@ function Hero({ onStart }: { onStart: () => void }) {
 
         <motion.h1
           variants={fadeUp}
-          className="max-w-[690px] text-[48px] font-semibold leading-[1.04] tracking-normal text-[#101936] sm:text-[68px] lg:text-[82px]"
+          className="max-w-[690px] text-[48px] font-semibold leading-[1.04] tracking-normal text-[#101936] sm:text-[68px] lg:text-[82px] 2xl:max-w-[820px] 2xl:text-[96px]"
         >
           Launch a polished web presence in minutes.
         </motion.h1>
 
         <motion.p
           variants={fadeUp}
-          className="mt-6 max-w-[560px] text-lg font-medium leading-8 text-[#59647f] sm:text-xl"
+          className="mt-6 max-w-[560px] text-lg font-medium leading-8 text-[#59647f] sm:text-xl 2xl:max-w-[640px]"
         >
           BaseStack turns a short conversation into a custom site with refined copy, crisp visual direction, hosting, analytics, and export-ready code.
         </motion.p>
@@ -161,7 +161,7 @@ function Hero({ onStart }: { onStart: () => void }) {
           </button>
         </motion.div>
 
-        <motion.div variants={fadeUp} className="mt-10 grid max-w-[610px] gap-3 sm:grid-cols-3">
+        <motion.div variants={fadeUp} className="mt-10 grid max-w-[610px] gap-3 sm:grid-cols-3 2xl:max-w-[700px]">
           <Metric value="38s" label="average first draft" />
           <Metric value="1 click" label="publish or export" />
           <Metric value="24/7" label="AI editing flow" />
@@ -179,7 +179,7 @@ function Hero({ onStart }: { onStart: () => void }) {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, delay: 0.45 }}
-        className="relative z-10 mt-8 grid gap-3 sm:w-[480px] sm:grid-cols-2 lg:absolute lg:bottom-8 lg:left-auto lg:right-12 lg:mt-0 lg:w-[520px]"
+        className="relative z-10 mt-8 grid gap-3 sm:w-[480px] sm:grid-cols-2 lg:absolute lg:bottom-8 lg:left-auto lg:right-12 lg:mt-0 lg:w-[520px] 2xl:bottom-12 2xl:right-16 2xl:w-[620px]"
       >
         <FloatingNote icon={<CheckCircle2 className="h-5 w-5" />} title="Site published" text="Custom domain ready" tone="green" />
         <FloatingNote icon={<MessageCircle className="h-5 w-5" />} title="AI edit applied" text="Updated hero copy" tone="violet" />
@@ -223,8 +223,8 @@ function FloatingNote({
 
 function TrustedStrip() {
   return (
-    <section className="bg-white px-5 py-10 sm:px-8 lg:px-12">
-      <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-6 lg:flex-row">
+    <section className="bg-white px-5 py-10 sm:px-8 lg:px-12 2xl:px-16">
+      <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-6 xl:max-w-[1360px] 2xl:max-w-[1580px] lg:flex-row">
         <p className="text-sm font-semibold text-[#68738e]">Trusted by creators and teams at</p>
         <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-[#606982]">
           {TRUSTED_BY.map((brand) => (
@@ -240,19 +240,19 @@ function TrustedStrip() {
 
 function FeatureShowcase() {
   return (
-    <section id="features" className="bg-white px-5 py-20 sm:px-8 lg:px-12">
+    <section id="features" className="bg-white px-5 py-20 sm:px-8 lg:px-12 2xl:px-16">
       <motion.div
         variants={stagger}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: '-80px' }}
-        className="mx-auto max-w-[1280px]"
+        className="mx-auto max-w-[1280px] xl:max-w-[1360px] 2xl:max-w-[1580px]"
       >
         <SectionIntro eyebrow="What it makes" title="A full web presence, not another blank canvas." text="The builder chooses layout, voice, visuals, publishing defaults, and code structure so you can start from a polished result." />
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-[1.08fr_0.92fr]">
+        <div className="mt-12 grid gap-5 xl:gap-7 lg:grid-cols-[1.08fr_0.92fr] 2xl:grid-cols-[1.18fr_0.82fr]">
           <motion.div variants={fadeUp} className="overflow-hidden rounded-2xl bg-[#f7f8ff] shadow-[0_20px_60px_rgba(42,52,92,0.1)]">
-            <img src={styleBoard} alt="A collage of generated BaseStack website layouts and interface modules." className="h-full min-h-[420px] w-full object-cover" />
+            <img src={styleBoard} alt="A collage of generated BaseStack website layouts and interface modules." className="h-full min-h-[420px] w-full object-cover 2xl:min-h-[500px]" />
           </motion.div>
 
           <motion.div variants={stagger} className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
@@ -305,7 +305,7 @@ function FeatureCard({ icon, title, text, tone }: { icon: React.ReactNode; title
   }[tone];
 
   return (
-    <motion.div variants={fadeUp} className="rounded-xl bg-white p-6 shadow-[0_16px_42px_rgba(43,53,90,0.08)]">
+    <motion.div variants={fadeUp} className="rounded-xl bg-white p-6 shadow-[0_16px_42px_rgba(43,53,90,0.08)] 2xl:p-8">
       <span className={`grid h-12 w-12 place-items-center rounded-xl ${toneClass}`}>{icon}</span>
       <h3 className="mt-5 text-xl font-semibold text-[#101936]">{title}</h3>
       <p className="mt-3 text-sm font-medium leading-6 text-[#65708c]">{text}</p>
@@ -315,17 +315,17 @@ function FeatureCard({ icon, title, text, tone }: { icon: React.ReactNode; title
 
 function BuildFlow({ onStart }: { onStart: () => void }) {
   return (
-    <section id="process" className="bg-[#fbfcff] px-5 py-20 sm:px-8 lg:px-12">
+    <section id="process" className="bg-[#fbfcff] px-5 py-20 sm:px-8 lg:px-12 2xl:px-16">
       <motion.div
         variants={stagger}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: '-80px' }}
-        className="mx-auto max-w-[1280px]"
+        className="mx-auto max-w-[1280px] xl:max-w-[1360px] 2xl:max-w-[1580px]"
       >
         <SectionIntro eyebrow="How it works" title="From quick answers to a live site." text="A guided flow gathers the useful context, then BaseStack drafts, tunes, and publishes your site without making you wrestle a template." />
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+        <div className="mt-12 grid gap-5 xl:gap-7 lg:grid-cols-3">
           <FlowStep count="1" icon={<Bot className="h-7 w-7" />} title="Describe your goals" text="Tell BaseStack who you are, what you do, and what the site should help people understand." />
           <FlowStep count="2" icon={<WandSparkles className="h-7 w-7" />} title="Review the first draft" text="Get structure, copy, styling, and imagery composed into a finished direction." active />
           <FlowStep count="3" icon={<Rocket className="h-7 w-7" />} title="Publish and grow" text="Ship with hosting, analytics, share links, and export controls ready when you need them." />
@@ -359,7 +359,7 @@ function FlowStep({ count, icon, title, text, active = false }: { count: string;
   return (
     <motion.div
       variants={fadeUp}
-      className={`relative overflow-hidden rounded-2xl p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] ${
+      className={`relative overflow-hidden rounded-2xl p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] 2xl:p-8 ${
         active ? 'bg-[#111A36] text-white' : 'bg-white text-[#101936]'
       }`}
     >
@@ -375,16 +375,16 @@ function FlowStep({ count, icon, title, text, active = false }: { count: string;
 
 function Testimonials() {
   return (
-    <section className="bg-white px-5 py-20 sm:px-8 lg:px-12">
+    <section className="bg-white px-5 py-20 sm:px-8 lg:px-12 2xl:px-16">
       <motion.div
         variants={stagger}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: '-80px' }}
-        className="mx-auto max-w-[1280px]"
+        className="mx-auto max-w-[1280px] xl:max-w-[1360px] 2xl:max-w-[1580px]"
       >
         <SectionIntro eyebrow="Proof" title="Sites that feel finished from the first draft." text="Creators use BaseStack when they want the speed of AI without sacrificing taste, polish, or ownership." />
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+        <div className="mt-12 grid gap-5 xl:gap-7 lg:grid-cols-3">
           <Testimonial quote="I had a portfolio live before my coffee got cold. The design felt custom, not like another dressed-up template." name="Alex Chen" role="Product designer" initials="AC" />
           <Testimonial quote="It understood the audience I was aiming for and gave me a site I could actually send to investors the same day." name="Maya Rodriguez" role="Founder" initials="MR" />
           <Testimonial quote="The editing flow is the best part. I just asked for sharper positioning and it rebuilt the section cleanly." name="Sam Liu" role="Frontend engineer" initials="SL" />
@@ -396,7 +396,7 @@ function Testimonials() {
 
 function Testimonial({ quote, name, role, initials }: { quote: string; name: string; role: string; initials: string }) {
   return (
-    <motion.article variants={fadeUp} className="rounded-2xl bg-white p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)]">
+    <motion.article variants={fadeUp} className="rounded-2xl bg-white p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] 2xl:p-8">
       <div className="flex gap-1 text-[#ffb936]">
         {[0, 1, 2, 3, 4].map((item) => (
           <Star key={item} className="h-4 w-4 fill-current" />
@@ -416,17 +416,17 @@ function Testimonial({ quote, name, role, initials }: { quote: string; name: str
 
 function Pricing({ onStart }: { onStart: () => void }) {
   return (
-    <section id="pricing" className="bg-[#fbfcff] px-5 py-20 sm:px-8 lg:px-12">
+    <section id="pricing" className="bg-[#fbfcff] px-5 py-20 sm:px-8 lg:px-12 2xl:px-16">
       <motion.div
         variants={stagger}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: '-80px' }}
-        className="mx-auto max-w-[1280px]"
+        className="mx-auto max-w-[1280px] xl:max-w-[1360px] 2xl:max-w-[1580px]"
       >
         <SectionIntro eyebrow="Pricing" title="Start free, upgrade when you need more room." text="Keep testing ideas at no cost, then unlock more websites, AI operations, analytics, and premium publishing." />
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+        <div className="mt-12 grid gap-5 xl:gap-7 lg:grid-cols-3">
           <PlanCard
             name="Free"
             price="$0"
@@ -482,7 +482,7 @@ function PlanCard({
   return (
     <motion.article
       variants={fadeUp}
-      className={`relative rounded-2xl bg-white p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] ${
+      className={`relative rounded-2xl bg-white p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] 2xl:p-8 ${
         featured ? 'ring-2 ring-[#d7d3ff]' : ''
       }`}
     >
@@ -529,8 +529,8 @@ function PlanCard({
 
 function FinalCta({ onStart }: { onStart: () => void }) {
   return (
-    <section className="bg-white px-5 py-20 sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-[1280px] overflow-hidden rounded-[24px] bg-[#111A36] px-7 py-12 text-white shadow-[0_24px_70px_rgba(17,26,54,0.22)] sm:px-10 lg:px-14">
+    <section className="bg-white px-5 py-20 sm:px-8 lg:px-12 2xl:px-16">
+      <div className="mx-auto max-w-[1280px] overflow-hidden rounded-[24px] bg-[#111A36] px-7 py-12 text-white shadow-[0_24px_70px_rgba(17,26,54,0.22)] sm:px-10 lg:px-14 xl:max-w-[1360px] 2xl:max-w-[1580px] 2xl:px-16 2xl:py-16">
         <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-[#d8ddf0]">
@@ -560,8 +560,8 @@ function FinalCta({ onStart }: { onStart: () => void }) {
 
 function Footer() {
   return (
-    <footer className="bg-white px-5 py-8 sm:px-8 lg:px-12">
-      <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-5 text-sm font-semibold text-[#75809b] md:flex-row">
+    <footer className="bg-white px-5 py-8 sm:px-8 lg:px-12 2xl:px-16">
+      <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-5 text-sm font-semibold text-[#75809b] xl:max-w-[1360px] 2xl:max-w-[1580px] md:flex-row">
         <div className="flex items-center gap-3 text-[#101936]">
           <Logo className="h-7 w-7 text-[#665cf6]" />
           <span>BaseStack</span>
