@@ -359,9 +359,8 @@ function FlowStep({ count, icon, title, text, active = false }: { count: string;
   return (
     <motion.div
       variants={fadeUp}
-      className={`relative overflow-hidden rounded-2xl p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] 2xl:p-8 ${
-        active ? 'bg-[#111A36] text-white' : 'bg-white text-[#101936]'
-      }`}
+      className={`relative overflow-hidden rounded-2xl p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] 2xl:p-8 ${active ? 'bg-[#111A36] text-white' : 'bg-white text-[#101936]'
+        }`}
     >
       <div className="flex items-center justify-between gap-4">
         <span className={`grid h-14 w-14 place-items-center rounded-xl ${active ? 'bg-white/10 text-white' : 'bg-[#f0edff] text-[#665cf6]'}`}>{icon}</span>
@@ -482,9 +481,8 @@ function PlanCard({
   return (
     <motion.article
       variants={fadeUp}
-      className={`relative rounded-2xl bg-white p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] 2xl:p-8 ${
-        featured ? 'ring-2 ring-[#d7d3ff]' : ''
-      }`}
+      className={`relative rounded-2xl bg-white p-7 shadow-[0_18px_44px_rgba(43,53,90,0.08)] 2xl:p-8 ${featured ? 'ring-2 ring-[#d7d3ff]' : ''
+        }`}
     >
       {featured && (
         <span className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-full bg-[#f0edff] px-3 py-1 text-xs font-bold text-[#665cf6]">
@@ -514,11 +512,10 @@ function PlanCard({
       <button
         type="button"
         onClick={onStart}
-        className={`mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition ${
-          featured
+        className={`mt-8 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-semibold transition ${featured
             ? 'bg-[#665cf6] text-white shadow-[0_12px_28px_rgba(102,92,246,0.25)] hover:bg-[#574df0]'
             : 'bg-white text-[#27304d] shadow-[0_10px_24px_rgba(35,45,80,0.08)] hover:text-[#6258ff]'
-        }`}
+          }`}
       >
         {cta}
         <ArrowRight className="h-4 w-4" />
